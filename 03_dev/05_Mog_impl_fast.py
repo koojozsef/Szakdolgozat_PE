@@ -79,9 +79,12 @@ Probabitiy of a pixel
 """
 def P(x_p):
     eta_r=[]
+    start_t = time.time()
     for mue_i in iter(mue_g):#iterate on gaussians
         eta_r.append(eta(x_p, mue_i, sigma_g))
         
+    end_t = time.time()
+    print(end_t-start_t)
     return (eta_r*omega_g)
     
 
