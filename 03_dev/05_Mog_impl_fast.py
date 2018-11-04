@@ -18,7 +18,7 @@ log_file = open("D:/joci/EGYETEM/_PE_MIK/3_felev/Szakdoga/opencvtest/log.txt","w
 MANUAL_CONTROL = 1 # enable manual control if 1
 RESIZE = 1 # enable resize if 1
 CFG_SHOW_FRAMES = 1 # shows frames in windows
-CFG_TEST = 1 # test
+CFG_TEST = 0 # test
 CFG_RUN = CFG_TEST == 0 # run
 #endregion
 
