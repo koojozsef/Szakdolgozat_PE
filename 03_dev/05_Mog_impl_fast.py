@@ -34,8 +34,8 @@ TASKS:
 """
 #region ---- GLOBAL PARAMETERS ----
 omega_g = (.5*np.ones((7))).astype('f')
-mue_g = (1*np.ones((7,3))).astype('f')
-sigma_g = (.3*np.ones((3,3))).astype('f')#
+mue_g = (1*np.ones((7,3))).astype(int)
+sigma_g = (2*np.ones((3,3))).astype('f')#
 alpha_g = .6
 #endregion
 
@@ -139,12 +139,13 @@ cv.destroyAllWindows()
 
 #region ---- TEST ----
 if(CFG_TEST):
-    T_x = np.arange(0,5,.01)
+    T_x = [np.arange(100),np.arange(100),np.arange(100)]
+    T_x = np.swapaxes(T_x,0,1)
     result = []
     for x in iter(T_x):
         result.append(P(x))
     result_plot = np.squeeze(result)
-    plt.plot(result_plot[:,0]) # plots the 1st gaussian for R G and B channel
+    plt.plot(result_plot) # plots the 1st gaussian
     plt.show()
     
 #endregion
