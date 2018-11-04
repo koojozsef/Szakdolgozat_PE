@@ -18,7 +18,7 @@ log_file = open("D:/joci/EGYETEM/_PE_MIK/3_felev/Szakdoga/opencvtest/log.txt","w
 MANUAL_CONTROL = 1 # enable manual control if 1
 RESIZE = 1 # enable resize if 1
 CFG_SHOW_FRAMES = 1 # shows frames in windows
-CFG_TEST = 0 # test
+CFG_TEST = 1 # test
 CFG_RUN = CFG_TEST == 0 # run
 #endregion
 
@@ -33,9 +33,9 @@ TASKS:
     - Create B list
 """
 #region ---- GLOBAL PARAMETERS ----
-omega_g = .5*np.ones((7,3))
-mue_g = 1*np.ones((7,3))
-sigma_g = np.array([1.,2.,3.])#
+omega_g = (.5*np.ones((7,3))).astype('f')
+mue_g = (1*np.ones((7,3))).astype('f')
+sigma_g = (.3*np.ones((3,3))).astype('f')#
 alpha_g = .6
 #endregion
 
@@ -47,8 +47,13 @@ Gaussian calculation
     @n: ??? default 1
 """
 def eta(x_p,mue_p,sigma_p,n=1):
+    a=(x_p-mue_p)
+    b=sigma_p**-1
+    c=x_p-mue_p
+    d= b@c
+    e= a.T@d
     
-    exponent = (-1/2) * (x_p-mue_p).T * sigma_p**-1 * x_p-mue_p
+    exponent = (-1/2) * e
     denominator = (2*math.pi)**(n/2) * abs(sigma_p)**(1/2) 
     return (1/denominator)*math.e**exponent
 
@@ -68,7 +73,7 @@ Probabitiy of a pixel
 """
 def P(x_p):
     eta_r=[]
-    for mue_i in iter(mue_g):
+    for mue_i in iter(mue_g):#iterate on gaussians
         eta_r.append(eta(x_p, mue_i, sigma_g))
         
     return (eta_r*omega_g)
@@ -128,7 +133,7 @@ cv.destroyAllWindows()
 
 #region ---- TEST ----
 if(CFG_TEST):
-    T_x = np.arange(0,255,.1)
+    T_x = np.arange(0,5,.1)
     result = []
     for x in iter(T_x):
         result.append(P(x))
