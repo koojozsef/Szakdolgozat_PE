@@ -33,7 +33,7 @@ TASKS:
     - Create B list
 """
 #region ---- GLOBAL PARAMETERS ----
-omega_g = (.5*np.ones((7,3))).astype('f')
+omega_g = (.5*np.ones((7))).astype('f')
 mue_g = (1*np.ones((7,3))).astype('f')
 sigma_g = (.3*np.ones((3,3))).astype('f')#
 alpha_g = .6
@@ -41,12 +41,13 @@ alpha_g = .6
 
 """
 Gaussian calculation 
-    @x_p: image matrix
-    @mue_p: expected value
-    @sigma_p: covariance matrix (must be square)
+    @x_p: image pixel (3,)
+    @mue_p: expected value (3,)
+    @sigma_p: covariance matrix (must be square and diagonal) (3,3)
     @n: ??? default 1
 """
 def eta(x_p,mue_p,sigma_p,n=1):
+    
     a=(x_p-mue_p)
     b=sigma_p**-1
     c=x_p-mue_p
@@ -54,7 +55,12 @@ def eta(x_p,mue_p,sigma_p,n=1):
     e= a.T@d
     
     exponent = (-1/2) * e
-    denominator = (2*math.pi)**(n/2) * abs(sigma_p)**(1/2) 
+    
+    
+    sigma_det= sigma_p[0][0]*sigma_p[1][1]*sigma_p[2][2]
+    
+    denominator = (2*math.pi)**(n/2) * sigma_det**(1/2) 
+    
     return (1/denominator)*math.e**exponent
 
 """
@@ -133,7 +139,7 @@ cv.destroyAllWindows()
 
 #region ---- TEST ----
 if(CFG_TEST):
-    T_x = np.arange(0,5,.1)
+    T_x = np.arange(0,5,.01)
     result = []
     for x in iter(T_x):
         result.append(P(x))
