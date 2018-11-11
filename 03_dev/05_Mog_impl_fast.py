@@ -30,7 +30,7 @@ __PIXELCOUNT__ = __HEIGHT__*__WIDTH__
 """
 TASKS:
     - [DONE] Implement background decider M()
-    - Evaluate omega value
+    - [DONE] Evaluate omega value
     - Evaluate mue and sigma
     - Create B list
 """
@@ -39,8 +39,21 @@ omega_g = (.5*np.ones((7,__PIXELCOUNT__))).astype('f')
 mue_g = (5*np.ones((__PIXELCOUNT__,3,7))).astype(int)
 sigma_g = (10*np.ones((__PIXELCOUNT__,3,7))).astype(int)
 alpha_g = .6
+ro_g = .5
 #endregion
 
+
+"""
+Mue updater
+    @ro_p: shall be ro_g
+    @pixel_p: image matrix
+    @mue_p: shall be mue_g
+"""
+def mue_update(ro_p, pixel_p, mue_p):
+    a = (1-ro_p)*mue_p
+    b = ro_p*pixel_p
+    c= a.T + b.T
+    return c
 
 
 """
@@ -104,6 +117,7 @@ while(CFG_RUN):
         long_frame = np.reshape(frame_r,(600*400,3))
         result = M(long_frame)
         omega_g = omega_update(omega_g,alpha_g,result)
+        mue_update(ro_g,long_frame,mue_g)
         
         result = np.reshape(result,(7,400,600))
         
