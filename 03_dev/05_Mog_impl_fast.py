@@ -32,8 +32,8 @@ TASKS:
 """
 #region ---- GLOBAL PARAMETERS ----
 omega_g = (.5*np.ones((7))).astype('f')
-mue_g = (1*np.ones((7,3))).astype(int)
-sigma_g = (2*np.ones((3,3))).astype('f')#
+mue_g = (5*np.ones((7,3))).astype(int)
+sigma_g = (10*np.ones((3,3))).astype(int)#
 alpha_g = .6
 #endregion
 
@@ -55,7 +55,16 @@ M algorithm
     @pixel_p: 3 element array
 """
 def M(pixel_p):
-    return 1
+    sigma_avg = ( sigma_g[0][0] + sigma_g[1][1] + sigma_g[2][2] ) / 3
+    a = mue_g - pixel_p
+    b = a**2
+    c = b.sum(axis=1)
+    d = c**(1/2)
+    e = d - sigma_avg
+    e[e<0] = 0
+    e[e>0] = 1
+    
+    return e.astype(bool)
 
 while(CFG_RUN):
     ret, frame = cap.read()
@@ -91,8 +100,8 @@ while(CFG_RUN):
         for rows in iter(frame_r):
             for pixel in iter(rows):
                 result.append(M(pixel))
-        result_shape = np.shape(frame_r)
-        result = np.reshape(result,result_shape[:2])
+        #result_shape = np.shape(frame_r)
+        #result = np.reshape(result,result_shape[:2])
         #endregion
         
         
