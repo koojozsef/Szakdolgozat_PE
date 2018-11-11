@@ -27,41 +27,19 @@ KEY_PRESSED = 1 #controls the frame steps
 
 """
 TASKS:
-    - Implement P(x) and log the results
+    - Implement background decider M()
     - Evaluate omega value
     - Evaluate mue and sigma
     - Create B list
 """
 #region ---- GLOBAL PARAMETERS ----
 omega_g = (.5*np.ones((7))).astype('f')
-mue_g = (1*np.ones((7,3))).astype('f')
-sigma_g = (.3*np.ones((3,3))).astype('f')#
+mue_g = (1*np.ones((7,3))).astype(int)
+sigma_g = (2*np.ones((3,3))).astype('f')#
 alpha_g = .6
 #endregion
 
-"""
-Gaussian calculation 
-    @x_p: image pixel (3,)
-    @mue_p: expected value (3,)
-    @sigma_p: covariance matrix (must be square and diagonal) (3,3)
-    @n: ??? default 1
-"""
-def eta(x_p,mue_p,sigma_p,n=1):
-    
-    a=(x_p-mue_p)
-    b=sigma_p**-1
-    c=x_p-mue_p
-    d= b@c
-    e= a.T@d
-    
-    exponent = (-1/2) * e
-    
-    
-    sigma_det= sigma_p[0][0]*sigma_p[1][1]*sigma_p[2][2]
-    
-    denominator = (2*math.pi)**(n/2) * sigma_det**(1/2) 
-    
-    return (1/denominator)*math.e**exponent
+
 
 """
 Omega updater method
@@ -73,16 +51,6 @@ Omega updater method
 def omega_update(omega_p,alpha_p,M_p):
     return (1-alpha_p)*omega_p + alpha_p*M_p
 
-"""
-Probabitiy of a pixel
-    @x_p: individual pixel 
-"""
-def P(x_p):
-    eta_r=[]
-    for mue_i in iter(mue_g):#iterate on gaussians
-        eta_r.append(eta(x_p, mue_i, sigma_g))
-        
-    return (eta_r*omega_g)
     
 
 while(CFG_RUN):
@@ -113,16 +81,10 @@ while(CFG_RUN):
         if CFG_SHOW_FRAMES == 1:
             cv.imshow('MOG frame',frame_r)
         #endregion
+        
         #region---- apply algorithms ----
-        result = []
-        start_t = time.time()
+       
         
-        for component in np.ndindex(frame_r.shape[:2]):
-            result.append(P(frame_r[component]))
-        
-        end_t = time.time()
-        print(end_t-start_t)
-        #fgmask_mix = fgmask_KNN & fgmask_MOG3
         #endregion
         
         
@@ -139,12 +101,11 @@ cv.destroyAllWindows()
 
 #region ---- TEST ----
 if(CFG_TEST):
-    T_x = np.arange(0,5,.01)
+    T_x = [np.arange(100),np.arange(100),np.arange(100)]
+    T_x = np.swapaxes(T_x,0,1)
     result = []
-    for x in iter(T_x):
-        result.append(P(x))
     result_plot = np.squeeze(result)
-    plt.plot(result_plot[:,0]) # plots the 1st gaussian for R G and B channel
+    plt.plot(result_plot) # plots the 1st gaussian
     plt.show()
     
 #endregion
