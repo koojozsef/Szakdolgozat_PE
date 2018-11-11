@@ -33,8 +33,8 @@ TASKS:
 """
 #region ---- GLOBAL PARAMETERS ----
 omega_g = (.5*np.ones((7))).astype('f')
-mue_g = (5*np.ones((7,3))).astype(int)
-sigma_g = (10*np.ones((3,3))).astype(int)#
+mue_g = (5*np.ones((600*400,3,7))).astype(int)
+sigma_g = (10*np.ones((600*400,3,7))).astype(int)#
 alpha_g = .6
 #endregion
 
@@ -56,10 +56,11 @@ M algorithm
     @pixel_p: 3 element array
 """
 def M(pixel_p):
-    sigma_avg = ( sigma_g[0][0] + sigma_g[1][1] + sigma_g[2][2] ) / 3
+    sigma_avg = np.mean(sigma_g,axis=1).T
     
-    a_min_b = mue_g - pixel_p
-    a = np.sqrt(np.einsum('ij,ij->i', a_min_b, a_min_b)) - sigma_avg
+    a_min_b = mue_g.T - pixel_p.T
+    b = np.sqrt(np.einsum('ijk,ijk->ik', a_min_b, a_min_b))
+    a = b - sigma_avg
     a[a<0] = 0
     a[a>0] = 1
     
@@ -97,9 +98,12 @@ while(CFG_RUN):
         #region---- apply algorithms ----
         start = time.time()
         result = []
-        for rows in iter(frame_r):
-            for pixel in iter(rows):
-                result.append(M(pixel))
+        long_frame = np.reshape(frame_r,(600*400,3))
+        result = M(long_frame)
+        result = np.reshape(result,(7,400,600))
+        rr = result[:3]*255
+        rrr = np.einsum('ijk->jki',rr)
+        cv.imshow("1.png",rrr)
         end = time.time()
         print(end-start)
         #result_shape = np.shape(frame_r)
