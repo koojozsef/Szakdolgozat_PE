@@ -7,7 +7,6 @@ Created on Mon Oct 22 10:50:37 2018
 
 import cv2 as cv
 import numpy as np
-import math
 import time
 from matplotlib import pyplot as plt
 
@@ -27,15 +26,15 @@ KEY_PRESSED = 1 #controls the frame steps
 
 """
 TASKS:
-    - Implement background decider M()
+    - [DONE] Implement background decider M()
     - Evaluate omega value
     - Evaluate mue and sigma
     - Create B list
 """
 #region ---- GLOBAL PARAMETERS ----
 omega_g = (.5*np.ones((7))).astype('f')
-mue_g = (1*np.ones((7,3))).astype(int)
-sigma_g = (2*np.ones((3,3))).astype('f')#
+mue_g = (5*np.ones((600*400,3,7))).astype(int)
+sigma_g = (10*np.ones((600*400,3,7))).astype(int)#
 alpha_g = .6
 #endregion
 
@@ -51,7 +50,21 @@ Omega updater method
 def omega_update(omega_p,alpha_p,M_p):
     return (1-alpha_p)*omega_p + alpha_p*M_p
 
+
+"""
+M algorithm
+    @pixel_p: 3 element array
+"""
+def M(pixel_p):
+    sigma_avg = np.mean(sigma_g,axis=1).T
     
+    a_min_b = mue_g.T - pixel_p.T
+    b = np.sqrt(np.einsum('ijk,ijk->ik', a_min_b, a_min_b))
+    a = b - sigma_avg
+    a[a<0] = 0
+    a[a>0] = 1
+    
+    return a.astype(bool)
 
 while(CFG_RUN):
     ret, frame = cap.read()
@@ -83,8 +96,18 @@ while(CFG_RUN):
         #endregion
         
         #region---- apply algorithms ----
-       
-        
+        start = time.time()
+        result = []
+        long_frame = np.reshape(frame_r,(600*400,3))
+        result = M(long_frame)
+        result = np.reshape(result,(7,400,600))
+        rr = result[:3]*255
+        rrr = np.einsum('ijk->jki',rr)
+        cv.imshow("1.png",rrr)
+        end = time.time()
+        print(end-start)
+        #result_shape = np.shape(frame_r)
+        #result = np.reshape(result,result_shape[:2])
         #endregion
         
         
