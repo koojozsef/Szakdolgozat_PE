@@ -7,8 +7,6 @@ Created on Mon Oct 22 10:50:37 2018
 
 import cv2 as cv
 import numpy as np
-import math
-import time
 from matplotlib import pyplot as plt
 
 cap = cv.VideoCapture("D:\\joci\\EGYETEM\\_PE_MIK\\3_felev\\Szakdoga\\02_data\\01_vid\\square.mp4")
@@ -51,7 +49,13 @@ Omega updater method
 def omega_update(omega_p,alpha_p,M_p):
     return (1-alpha_p)*omega_p + alpha_p*M_p
 
-    
+
+"""
+M algorithm
+    @pixel_p: 3 element array
+"""
+def M(pixel_p):
+    return 1
 
 while(CFG_RUN):
     ret, frame = cap.read()
@@ -83,8 +87,12 @@ while(CFG_RUN):
         #endregion
         
         #region---- apply algorithms ----
-       
-        
+        result = []
+        for rows in iter(frame_r):
+            for pixel in iter(rows):
+                result.append(M(pixel))
+        result_shape = np.shape(frame_r)
+        result = np.reshape(result,result_shape[:2])
         #endregion
         
         
