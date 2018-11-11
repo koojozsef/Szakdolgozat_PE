@@ -14,7 +14,7 @@ cap = cv.VideoCapture("D:\\joci\\EGYETEM\\_PE_MIK\\3_felev\\Szakdoga\\02_data\\0
 log_file = open("D:/joci/EGYETEM/_PE_MIK/3_felev/Szakdoga/opencvtest/log.txt","w")
 
 #region ---- CONFIGURATION ----
-MANUAL_CONTROL = 1 # enable manual control if 1
+MANUAL_CONTROL = 0 # enable manual control if 1
 RESIZE = 1 # enable resize if 1
 CFG_SHOW_FRAMES = 1 # shows frames in windows
 CFG_TEST = 0 # test
@@ -23,6 +23,9 @@ CFG_RUN = CFG_TEST == 0 # run
 
 #region ---- CODE ----
 KEY_PRESSED = 1 #controls the frame steps
+__HEIGHT__ = 400
+__WIDTH__ = 600
+__PIXELCOUNT__ = __HEIGHT__*__WIDTH__
 
 """
 TASKS:
@@ -32,9 +35,9 @@ TASKS:
     - Create B list
 """
 #region ---- GLOBAL PARAMETERS ----
-omega_g = (.5*np.ones((7))).astype('f')
-mue_g = (5*np.ones((600*400,3,7))).astype(int)
-sigma_g = (10*np.ones((600*400,3,7))).astype(int)#
+omega_g = (.5*np.ones((7,__PIXELCOUNT__))).astype('f')
+mue_g = (5*np.ones((__PIXELCOUNT__,3,7))).astype(int)
+sigma_g = (10*np.ones((__PIXELCOUNT__,3,7))).astype(int)
 alpha_g = .6
 #endregion
 
@@ -100,9 +103,13 @@ while(CFG_RUN):
         result = []
         long_frame = np.reshape(frame_r,(600*400,3))
         result = M(long_frame)
+        omega_g = omega_update(omega_g,alpha_g,result)
+        
         result = np.reshape(result,(7,400,600))
-        rr = result[:3]*255
+        
+        rr = result[:1]*1.0
         rrr = np.einsum('ijk->jki',rr)
+        
         cv.imshow("1.png",rrr)
         end = time.time()
         print(end-start)
