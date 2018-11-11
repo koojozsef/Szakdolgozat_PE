@@ -26,7 +26,7 @@ KEY_PRESSED = 1 #controls the frame steps
 
 """
 TASKS:
-    - Implement background decider M()
+    - [DONE] Implement background decider M()
     - Evaluate omega value
     - Evaluate mue and sigma
     - Create B list
