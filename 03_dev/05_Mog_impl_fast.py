@@ -7,6 +7,7 @@ Created on Mon Oct 22 10:50:37 2018
 
 import cv2 as cv
 import numpy as np
+import time
 from matplotlib import pyplot as plt
 
 cap = cv.VideoCapture("D:\\joci\\EGYETEM\\_PE_MIK\\3_felev\\Szakdoga\\02_data\\01_vid\\square.mp4")
@@ -56,15 +57,13 @@ M algorithm
 """
 def M(pixel_p):
     sigma_avg = ( sigma_g[0][0] + sigma_g[1][1] + sigma_g[2][2] ) / 3
-    a = mue_g - pixel_p
-    b = a**2
-    c = b.sum(axis=1)
-    d = c**(1/2)
-    e = d - sigma_avg
-    e[e<0] = 0
-    e[e>0] = 1
     
-    return e.astype(bool)
+    a_min_b = mue_g - pixel_p
+    a = np.sqrt(np.einsum('ij,ij->i', a_min_b, a_min_b)) - sigma_avg
+    a[a<0] = 0
+    a[a>0] = 1
+    
+    return a.astype(bool)
 
 while(CFG_RUN):
     ret, frame = cap.read()
@@ -96,10 +95,13 @@ while(CFG_RUN):
         #endregion
         
         #region---- apply algorithms ----
+        start = time.time()
         result = []
         for rows in iter(frame_r):
             for pixel in iter(rows):
                 result.append(M(pixel))
+        end = time.time()
+        print(end-start)
         #result_shape = np.shape(frame_r)
         #result = np.reshape(result,result_shape[:2])
         #endregion
