@@ -36,18 +36,34 @@ TASKS:
 """
 #region ---- GLOBAL PARAMETERS ----
 omega_g = (.5*np.ones((7,__PIXELCOUNT__))).astype('f')
-mue_g = (5*np.ones((__PIXELCOUNT__,3,7))).astype(int)
+mue_g = (125*np.ones((__PIXELCOUNT__,3,7))).astype(int)
 sigma_g = (10*np.ones((__PIXELCOUNT__,3,7))).astype(int)
 alpha_g = .6
 ro_g = .5
 #endregion
 
+"""
+Sigma updater
+    @ro_p
+    @pixel_p
+    @mue_p
+    @sigma_p
+    @M_p
+"""
+def sigma_updater(ro_p, pixel_p, mue_p, sigma_p, M_p):
+    distance = mue_p.T - pixel_p.T
+    distance_sq = np.einsum('ijk,ijk->ijk',distance,distance)
+    sigma_p_sq = np.einsum('ijk,ijk->ijk',sigma_p,sigma_p) 
+    sigma_sq = (1-ro_p)*sigma_p_sq + ro_p*distance_sq.T
+    sigma_ret = np.sqrt(sigma_sq)
+    return sigma_ret """!!! CURRENTLY INDEPENDENT ON M() !!!"""
 
 """
 Mue updater
     @ro_p: shall be ro_g
     @pixel_p: image matrix
     @mue_p: shall be mue_g
+    @M_p: 
 """
 def mue_update(ro_p, pixel_p, mue_p,M_p):
     a = (1-ro_p)*mue_p
@@ -117,10 +133,11 @@ while(CFG_RUN):
         #region---- apply algorithms ----
         start = time.time()
         result = []
-        long_frame = np.reshape(frame_r,(600*400,3))
+        long_frame = np.reshape(frame_r,(__PIXELCOUNT__,3))
         result = M(long_frame)
         omega_g = omega_update(omega_g,alpha_g,result)
         mue_g = mue_update(ro_g,long_frame,mue_g,result)
+        sigma_g = sigma_updater(ro_g,long_frame,mue_g,sigma_g,result)
         
         result = np.reshape(result,(7,400,600))
         
