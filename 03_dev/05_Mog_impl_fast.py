@@ -30,7 +30,7 @@ __PIXELCOUNT__ = __HEIGHT__*__WIDTH__
 """
 TASKS:
     - [DONE] Implement background decider M()
-    - Evaluate omega value
+    - [DONE] Evaluate omega value
     - Evaluate mue and sigma
     - Create B list
 """
@@ -39,8 +39,44 @@ omega_g = (.5*np.ones((7,__PIXELCOUNT__))).astype('f')
 mue_g = (5*np.ones((__PIXELCOUNT__,3,7))).astype(int)
 sigma_g = (10*np.ones((__PIXELCOUNT__,3,7))).astype(int)
 alpha_g = .6
+ro_g = .5
 #endregion
 
+"""
+Sigma updater
+    @ro_p
+    @pixel_p
+    @mue_p
+    @sigma_p
+    @M_p
+"""
+def sigma_updater(ro_p, pixel_p, mue_p, sigma_p, M_p):
+    distance = mue_p.T - pixel_p.T
+    distance_sq = np.einsum('ijk,ijk->ijk',distance,distance)
+    sigma_p_sq = np.einsum('ijk,ijk->ijk',sigma_p,sigma_p) 
+    a = (1-ro_p)*sigma_p_sq
+    b = ro_p*distance_sq.T
+    c = np.einsum('ijk,ki->ijk',a+b,M_p)
+    d = np.einsum('ijk,ki->ijk',sigma_p_sq,(1-M_p))
+    sigma_sq = c + d
+    sigma_ret = np.sqrt(sigma_sq)
+    return sigma_ret
+
+"""
+Mue updater
+    @ro_p: shall be ro_g
+    @pixel_p: image matrix
+    @mue_p: shall be mue_g
+    @M_p: 
+"""
+def mue_update(ro_p, pixel_p, mue_p,M_p):
+    a = (1-ro_p)*mue_p
+    b = np.einsum('ijk,ij->ijk',a,(ro_p*pixel_p))
+    mue= np.einsum('ijk,ki->ijk',b,M_p)
+    #d= (1-M_p)*mue_p
+    c= np.einsum('ij,jki->jki',(1-M_p),mue_p)#M_p*(a.T + b.T) + d
+    result = c+mue
+    return result
 
 
 """
@@ -101,16 +137,20 @@ while(CFG_RUN):
         #region---- apply algorithms ----
         start = time.time()
         result = []
-        long_frame = np.reshape(frame_r,(600*400,3))
+        long_frame = np.reshape(frame_r,(__PIXELCOUNT__,3))
         result = M(long_frame)
         omega_g = omega_update(omega_g,alpha_g,result)
+        mue_g = mue_update(ro_g,long_frame,mue_g,result)
+        sigma_g = sigma_updater(ro_g,long_frame,mue_g,sigma_g,result)
         
         result = np.reshape(result,(7,400,600))
         
         rr = result[:1]*1.0
         rrr = np.einsum('ijk->jki',rr)
+        mueimg = mue_g[:,:,0]/255.0
+        mueimg_reshape= np.reshape(mueimg,(400,600,3))
         
-        cv.imshow("1.png",rrr)
+        cv.imshow("1.png",mueimg_reshape)
         end = time.time()
         print(end-start)
         #result_shape = np.shape(frame_r)
