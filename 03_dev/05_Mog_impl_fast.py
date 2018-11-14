@@ -36,7 +36,7 @@ TASKS:
 """
 #region ---- GLOBAL PARAMETERS ----
 omega_g = (.5*np.ones((7,__PIXELCOUNT__))).astype('f')
-mue_g = (125*np.ones((__PIXELCOUNT__,3,7))).astype(int)
+mue_g = (5*np.ones((__PIXELCOUNT__,3,7))).astype(int)
 sigma_g = (10*np.ones((__PIXELCOUNT__,3,7))).astype(int)
 alpha_g = .6
 ro_g = .5
@@ -54,9 +54,13 @@ def sigma_updater(ro_p, pixel_p, mue_p, sigma_p, M_p):
     distance = mue_p.T - pixel_p.T
     distance_sq = np.einsum('ijk,ijk->ijk',distance,distance)
     sigma_p_sq = np.einsum('ijk,ijk->ijk',sigma_p,sigma_p) 
-    sigma_sq = (1-ro_p)*sigma_p_sq + ro_p*distance_sq.T
+    a = (1-ro_p)*sigma_p_sq
+    b = ro_p*distance_sq.T
+    c = np.einsum('ijk,ki->ijk',a+b,M_p)
+    d = np.einsum('ijk,ki->ijk',sigma_p_sq,(1-M_p))
+    sigma_sq = c + d
     sigma_ret = np.sqrt(sigma_sq)
-    return sigma_ret """!!! CURRENTLY INDEPENDENT ON M() !!!"""
+    return sigma_ret
 
 """
 Mue updater
