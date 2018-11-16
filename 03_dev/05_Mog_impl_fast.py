@@ -5,6 +5,14 @@ Created on Mon Oct 22 10:50:37 2018
 @author: koojo
 """
 
+"""
+TASKS:
+    - [DONE] Implement background decider M()
+    - [DONE] Evaluate omega value
+    - [DONE] Evaluate mue and sigma
+    - Create B list
+"""
+
 import cv2 as cv
 import numpy as np
 import time
@@ -144,18 +152,27 @@ while (CFG_RUN):
         result = []
         long_frame = np.reshape(frame_r, (__PIXELCOUNT__, 3))
         result = M(long_frame)
-        omega_g = omega_update(omega_g, alpha_g, result)
-        mue_g = mue_update(ro_g, long_frame, mue_g, result)
-        sigma_g = sigma_updater(ro_g, long_frame, mue_g, sigma_g, result)
-
-        result = np.reshape(result, (7, 400, 600))
-
-        rr = result[:1] * 1.0
-        rrr = np.einsum('ijk->jki', rr)
-        mueimg = mue_g[:, :, 0] / 255.0
-        mueimg_reshape = np.reshape(mueimg, (400, 600, 3))
-
-        cv.imshow("1.png", mueimg_reshape)
+        omega_g = omega_update(omega_g,alpha_g,result)
+        mue_g = mue_update(ro_g,long_frame,mue_g,result)
+        sigma_g = sigma_updater(ro_g,long_frame,mue_g,sigma_g,result)
+        
+        #test
+        sigma_g[:,:1,:2]=20
+        #test end
+        sigma_avg = sigma_g.sum(axis=1)/3
+        omega_rec = 1/omega_g
+        B_all = np.einsum('ij,ji->ji',omega_rec,sigma_avg)
+        B_all.sort(axis=1)
+        B = B_all[:,:4]
+        
+        result = np.reshape(result,(7,400,600))
+        
+        rr = result[:1]*1.0
+        rrr = np.einsum('ijk->jki',rr)
+        mueimg = mue_g[:,:,0]/255.0
+        mueimg_reshape= np.reshape(mueimg,(400,600,3))
+        
+        cv.imshow("1.png",mueimg_reshape)
         end = time.time()
         print(end - start)
         # result_shape = np.shape(frame_r)
