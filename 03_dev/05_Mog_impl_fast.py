@@ -33,7 +33,10 @@ CFG_RUN = CFG_TEST == 0  # run
 KEY_PRESSED = 1  # controls the frame steps
 __HEIGHT__ = 400
 __WIDTH__ = 600
-__PIXELCOUNT__ = __HEIGHT__ * __WIDTH__
+__PIXELCOUNT__ = __HEIGHT__*__WIDTH__
+__MUE__ = 0
+__SIGMA__ = 1
+__OMEGA__ = 2
 
 """
 TASKS:
@@ -42,10 +45,19 @@ TASKS:
     - Evaluate mue and sigma
     - Create B list
 """
-# region ---- GLOBAL PARAMETERS ----
-omega_g = (.5 * np.ones((7, __PIXELCOUNT__))).astype('f')
-mue_g = (5 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
-sigma_g = (10 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
+
+#region ---- GLOBAL PARAMETERS ----
+omega_g = (.5*np.ones((__PIXELCOUNT__,3,7))).astype('f')
+mue_g = (5*np.ones((__PIXELCOUNT__,3,7))).astype(int)
+sigma_g = (10*np.ones((__PIXELCOUNT__,3,7))).astype(int)
+
+"""distribution_g
+    axis 0 :    0 - __PIXELCOUNT__  : pixel identifier
+    axis 1 :            0 - 3       : R,G,B channels
+    axis 2 :            0 - 7       : distribution identifier
+    axis 3 :            0 - 3       : mue,sigma,omega parameters
+"""
+distribution_g = np.stack((mue_g,sigma_g,omega_g),axis=3)
 alpha_g = .6
 ro_g = .5
 
@@ -150,11 +162,11 @@ while (CFG_RUN):
         # region---- apply algorithms ----
         start = time.time()
         result = []
-        long_frame = np.reshape(frame_r, (__PIXELCOUNT__, 3))
-        result = M(long_frame)
-        omega_g = omega_update(omega_g,alpha_g,result)
-        mue_g = mue_update(ro_g,long_frame,mue_g,result)
-        sigma_g = sigma_updater(ro_g,long_frame,mue_g,sigma_g,result)
+        long_frame = np.reshape(frame_r,(__PIXELCOUNT__,3))
+        result = M(long_frame,distribution_g[:,:,:,__SIGMA__])
+        distribution_g[:,0,:,__OMEGA__] = omega_update(distribution_g[:,0,:,__OMEGA__],alpha_g,result)
+        distribution_g[:,:,:,__MUE__] = mue_update(ro_g,long_frame,distribution_g[:,:,:,__MUE__],result)
+        distribution_g[:,:,:,__SIGMA__] = sigma_updater(ro_g,long_frame,distribution_g[:,:,:,__MUE__],distribution_g[:,:,:,__SIGMA__],result)
         
         #test
         sigma_g[:,:1,:2]=20
