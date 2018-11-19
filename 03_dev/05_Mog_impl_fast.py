@@ -171,9 +171,9 @@ while (CFG_RUN):
         #test
         sigma_g[:,:1,:2]=20
         #test end
-        sigma_avg = sigma_g.sum(axis=1)/3
-        omega_rec = 1/omega_g
-        B_all = np.einsum('ij,ji->ji',omega_rec,sigma_avg)
+        sigma_avg = distribution_g[:,:,:,__SIGMA__].sum(axis=1)/3
+        omega_rec = 1/distribution_g[:,0,:,__OMEGA__]
+        B_all = np.einsum('ij,ij->ij',omega_rec,sigma_avg)
         B_all.sort(axis=1)
         B = B_all[:,:4]
         
