@@ -40,19 +40,20 @@ mue_g = (5 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
 sigma_g = (10 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
 alpha_g = .6
 ro_g = .5
-# endregion
 
-"""
-Sigma updater
-    @ro_p
-    @pixel_p
-    @mue_p
-    @sigma_p
-    @M_p
-"""
+
+# endregion
 
 
 def sigma_updater(ro_p, pixel_p, mue_p, sigma_p, M_p):
+    """
+    Sigma updater
+        @ro_p
+        @pixel_p
+        @mue_p
+        @sigma_p
+        @M_p
+    """
     distance = mue_p.T - pixel_p.T
     distance_sq = np.einsum('ijk,ijk->ijk', distance, distance)
     sigma_p_sq = np.einsum('ijk,ijk->ijk', sigma_p, sigma_p)
@@ -65,16 +66,14 @@ def sigma_updater(ro_p, pixel_p, mue_p, sigma_p, M_p):
     return sigma_ret
 
 
-"""
-Mue updater
-    @ro_p: shall be ro_g
-    @pixel_p: image matrix
-    @mue_p: shall be mue_g
-    @M_p: 
-"""
-
-
 def mue_update(ro_p, pixel_p, mue_p, M_p):
+    """
+    Mue updater
+        @ro_p: shall be ro_g
+        @pixel_p: image matrix
+        @mue_p: shall be mue_g
+        @M_p:
+    """
     a = (1 - ro_p) * mue_p
     b = np.einsum('ijk,ij->ijk', a, (ro_p * pixel_p))
     mue = np.einsum('ijk,ki->ijk', b, M_p)
@@ -84,26 +83,22 @@ def mue_update(ro_p, pixel_p, mue_p, M_p):
     return result
 
 
-"""
-Omega updater method
-    @omega_p: omega_g shall be this
-    @alpha_p: alpha_g shall be this
-    @M_p: Marks if distribution matches to current pixel (1 or 0)
-        matrix with a size of omega_g
-"""
-
-
 def omega_update(omega_p, alpha_p, M_p):
+    """
+    Omega updater method
+        @omega_p: omega_g shall be this
+        @alpha_p: alpha_g shall be this
+        @M_p: Marks if distribution matches to current pixel (1 or 0)
+            matrix with a size of omega_g
+    """
     return (1 - alpha_p) * omega_p + alpha_p * M_p
 
 
-"""
-M algorithm
-    @pixel_p: 3 element array
-"""
-
-
 def M(pixel_p):
+    """
+    M algorithm
+        @pixel_p: 3 element array
+    """
     sigma_avg = np.mean(sigma_g, axis=1).T
 
     a_min_b = mue_g.T - pixel_p.T
