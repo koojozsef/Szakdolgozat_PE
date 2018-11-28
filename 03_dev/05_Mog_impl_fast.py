@@ -47,9 +47,12 @@ TASKS:
 """
 
 # region ---- GLOBAL PARAMETERS ----
-omega_g = (.5 * np.ones((__PIXELCOUNT__, 3, 7))).astype('f')
-mue_g = (5 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
-sigma_g = (10 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
+#mega_g = (.5 * np.ones((__PIXELCOUNT__, 3, 7))).astype('f')
+omega_g = np.reshape(np.arange(0,__PIXELCOUNT__*3*7,1),(__PIXELCOUNT__,3,7))
+#mue_g = (5 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
+mue_g = np.reshape(np.arange(0,__PIXELCOUNT__*3*7,1),(__PIXELCOUNT__,3,7))
+#sigma_g = (10 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
+sigma_g = np.reshape(np.arange(0,__PIXELCOUNT__*3*7,1),(__PIXELCOUNT__,3,7))
 
 """distribution_g
     axis 0 :    0 - __PIXELCOUNT__  : pixel identifier
