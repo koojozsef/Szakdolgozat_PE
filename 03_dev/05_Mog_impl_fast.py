@@ -34,6 +34,9 @@ KEY_PRESSED = 1  # controls the frame steps
 __HEIGHT__ = 400
 __WIDTH__ = 600
 __PIXELCOUNT__ = __HEIGHT__ * __WIDTH__
+__MUE__ = 0
+__SIGMA__ = 1
+__OMEGA__ = 2
 
 """
 TASKS:
@@ -42,10 +45,19 @@ TASKS:
     - Evaluate mue and sigma
     - Create B list
 """
+
 # region ---- GLOBAL PARAMETERS ----
-omega_g = (.5 * np.ones((7, __PIXELCOUNT__))).astype('f')
+omega_g = (.5 * np.ones((__PIXELCOUNT__, 3, 7))).astype('f')
 mue_g = (5 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
 sigma_g = (10 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
+
+"""distribution_g
+    axis 0 :    0 - __PIXELCOUNT__  : pixel identifier
+    axis 1 :            0 - 3       : R,G,B channels
+    axis 2 :            0 - 7       : distribution identifier
+    axis 3 :            0 - 3       : mue,sigma,omega parameters
+"""
+distribution_g = np.stack((mue_g, sigma_g, omega_g), axis=3)
 alpha_g = .6
 ro_g = .5
 
@@ -99,15 +111,16 @@ def omega_update(omega_p, alpha_p, M_p):
         @M_p: Marks if distribution matches to current pixel (1 or 0)
             matrix with a size of omega_g
     """
-    return (1 - alpha_p) * omega_p + alpha_p * M_p
+    return (1 - alpha_p) * omega_p + alpha_p * M_p.T
 
 
-def M(pixel_p):
+def M(pixel_p, sigma_p):
     """
     M algorithm
         @pixel_p: 3 element array
+        @sigma_p
     """
-    sigma_avg = np.mean(sigma_g, axis=1).T
+    sigma_avg = np.mean(sigma_p, axis=1).T
 
     a_min_b = mue_g.T - pixel_p.T
     b = np.sqrt(np.einsum('ijk,ijk->ik', a_min_b, a_min_b))
@@ -151,28 +164,40 @@ while (CFG_RUN):
         start = time.time()
         result = []
         long_frame = np.reshape(frame_r, (__PIXELCOUNT__, 3))
-        result = M(long_frame)
-        omega_g = omega_update(omega_g,alpha_g,result)
-        mue_g = mue_update(ro_g,long_frame,mue_g,result)
-        sigma_g = sigma_updater(ro_g,long_frame,mue_g,sigma_g,result)
-        
-        #test
-        sigma_g[:,:1,:2]=20
-        #test end
-        sigma_avg = sigma_g.sum(axis=1)/3
-        omega_rec = 1/omega_g
-        B_all = np.einsum('ij,ji->ji',omega_rec,sigma_avg)
-        B_all.sort(axis=1)
-        B = B_all[:,:4]
-        
-        result = np.reshape(result,(7,400,600))
-        
-        rr = result[:1]*1.0
-        rrr = np.einsum('ijk->jki',rr)
-        mueimg = mue_g[:,:,0]/255.0
-        mueimg_reshape= np.reshape(mueimg,(400,600,3))
-        
-        cv.imshow("1.png",mueimg_reshape)
+        result = M(long_frame, distribution_g[:, :, :, __SIGMA__])
+        distribution_g[:, 0, :, __OMEGA__] = omega_update(distribution_g[:, 0, :, __OMEGA__], alpha_g, result)
+        distribution_g[:, :, :, __MUE__] = mue_update(ro_g, long_frame, distribution_g[:, :, :, __MUE__], result)
+        distribution_g[:, :, :, __SIGMA__] = sigma_updater(ro_g, long_frame, distribution_g[:, :, :, __MUE__],
+                                                           distribution_g[:, :, :, __SIGMA__], result)
+
+        # test
+        sigma_g[:, :1, :2] = 20
+        # test end
+        sigma_avg = distribution_g[:, :, :, __SIGMA__].sum(axis=1) / 3
+        omega_rec = 1 / distribution_g[:, 0, :, __OMEGA__]
+        B_all = np.einsum('ij,ij->ij', omega_rec, sigma_avg)
+        B_ext = [sigma_avg, B_all]
+        B_extArr = np.asarray(B_ext)
+        B_extArr[:, :, :2] = 20
+        B_extArr = np.moveaxis(B_extArr, 0, -1)
+        B_Res = []
+        for distr in B_extArr:
+            B_Res.append(sorted(distr, key=lambda x: x[1]))
+
+        B_sorted = np.asarray(B_Res)
+        B = B_sorted[:, :4, :]
+
+        # check if pixel is part of B:
+        background = M(long_frame, B[:, :, 0])
+
+        background = np.reshape(background, (7, 400, 600))
+
+        rr = background[:1] * 1.0
+        rrr = np.einsum('ijk->jki', rr)
+        mueimg = mue_g[:, :, 0] / 255.0
+        mueimg_reshape = np.reshape(mueimg, (400, 600, 3))
+
+        cv.imshow("1.png", rrr)
         end = time.time()
         print(end - start)
         # result_shape = np.shape(frame_r)
