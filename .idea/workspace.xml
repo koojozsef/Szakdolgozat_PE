@@ -19,19 +19,21 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="447">
-              <caret line="199" column="30" selection-start-line="199" selection-start-column="30" selection-end-line="199" selection-end-column="30" />
+            <state relative-caret-position="859">
+              <caret line="265" lean-forward="true" selection-start-line="265" selection-end-line="265" />
+              <folding>
+                <element signature="e#1696#2199#0" />
+                <element signature="e#2249#2641#0" />
+                <element signature="e#2689#2970#0" />
+                <element signature="e#3325#6051#0" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/_pydev_imps/_pydev_execfile.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="289">
-              <caret line="17" selection-start-line="17" selection-end-line="17" />
-            </state>
-          </provider>
+        <entry file="file://$PROJECT_DIR$/02_data/03_logs/time_log.txt">
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
     </leaf>
@@ -47,11 +49,12 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
+        <option value="$PROJECT_DIR$/02_data/03_logs/time_log.txt" />
         <option value="$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="7">
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="260" />
     <option name="y" value="25" />
     <option name="width" value="1400" />
@@ -69,6 +72,23 @@
             <path>
               <item name="Szakdolgozat_PE" type="b2602c69:ProjectViewProjectNode" />
               <item name="Szakdolgozat_PE" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="Szakdolgozat_PE" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Szakdolgozat_PE" type="462c0819:PsiDirectoryNode" />
+              <item name="02_data" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="Szakdolgozat_PE" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Szakdolgozat_PE" type="462c0819:PsiDirectoryNode" />
+              <item name="02_data" type="462c0819:PsiDirectoryNode" />
+              <item name="01_vid" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="Szakdolgozat_PE" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Szakdolgozat_PE" type="462c0819:PsiDirectoryNode" />
+              <item name="02_data" type="462c0819:PsiDirectoryNode" />
+              <item name="03_logs" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="Szakdolgozat_PE" type="b2602c69:ProjectViewProjectNode" />
@@ -137,12 +157,21 @@
     </task>
     <servers />
   </component>
+  <component name="TodoView">
+    <todo-panel id="selected-file">
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+    <todo-panel id="all">
+      <are-packages-shown value="true" />
+      <is-autoscroll-to-source value="true" />
+    </todo-panel>
+  </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1066" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49520767" visible="true" weight="0.18710022" />
-      <window_info id="Structure" order="1" sideWeight="0.50479233" side_tool="true" visible="true" weight="0.18710022" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49367088" visible="true" weight="0.13539445" />
+      <window_info id="Structure" order="1" sideWeight="0.5063291" side_tool="true" visible="true" weight="0.13539445" />
       <window_info id="Favorites" order="2" sideWeight="0.5009597" side_tool="true" weight="0.2496329" />
       <window_info anchor="bottom" id="Version Control" order="0" weight="0.3298731" />
       <window_info anchor="bottom" id="Python Console" order="1" />
@@ -150,21 +179,53 @@
       <window_info anchor="bottom" id="Event Log" order="3" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="4" />
       <window_info anchor="bottom" id="Find" order="5" />
-      <window_info active="true" anchor="bottom" id="Run" order="6" visible="true" weight="0.3290461" />
+      <window_info active="true" anchor="bottom" id="Run" order="6" visible="true" weight="0.23794213" />
       <window_info anchor="bottom" id="Cvs" order="7" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="8" weight="0.4" />
-      <window_info anchor="bottom" id="TODO" order="9" />
+      <window_info anchor="bottom" id="TODO" order="9" weight="0.3290461" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-      <window_info anchor="right" id="Debug" order="3" side_tool="true" visible="true" weight="0.28464818" />
+      <window_info anchor="right" id="Debug" order="3" side_tool="true" visible="true" weight="0.34861407" />
     </layout>
   </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py</url>
+          <line>147</line>
+          <option name="timeStamp" value="5" />
+        </line-breakpoint>
+      </breakpoints>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+    </breakpoint-manager>
+  </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py">
+    <entry file="file://$PROJECT_DIR$/03_dev/.pylintrc">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="447">
-          <caret line="199" column="30" selection-start-line="199" selection-start-column="30" selection-end-line="199" selection-end-column="30" />
+        <state relative-caret-position="5610">
+          <caret line="330" column="10" selection-start-line="330" selection-start-column="6" selection-end-line="330" selection-end-column="10" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharmCE2018.3/system/python_stubs/-793851393/cv2/cv2/VideoCapture.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="149">
+          <caret line="131" column="8" selection-start-line="131" selection-start-column="8" selection-end-line="131" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://D:/Games/Python3/Lib/site-packages/numpy/core/einsumfunc.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="228">
+          <caret line="1068" selection-start-line="1068" selection-end-line="1068" />
         </state>
       </provider>
     </entry>
@@ -172,6 +233,29 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="289">
           <caret line="17" selection-start-line="17" selection-end-line="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://D:/Games/Python3/Lib/typing.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="228">
+          <caret line="2323" column="8" selection-start-line="2323" selection-start-column="8" selection-end-line="2323" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/02_data/03_logs/time_log.txt">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="859">
+          <caret line="265" lean-forward="true" selection-start-line="265" selection-end-line="265" />
+          <folding>
+            <element signature="e#1696#2199#0" />
+            <element signature="e#2249#2641#0" />
+            <element signature="e#2689#2970#0" />
+            <element signature="e#3325#6051#0" />
+          </folding>
         </state>
       </provider>
     </entry>

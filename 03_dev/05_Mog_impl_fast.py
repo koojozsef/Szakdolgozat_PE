@@ -19,13 +19,13 @@ import time
 from matplotlib import pyplot as plt
 
 cap = cv.VideoCapture("D:\\joci\\EGYETEM\\_PE_MIK\\3_felev\\Szakdoga\\02_data\\01_vid\\square.mp4")
-log_file = open("D:/joci/EGYETEM/_PE_MIK/3_felev/Szakdoga/opencvtest/log.txt", "w")
+log_file_path = "../02_data/03_logs/time_log.txt"
 
 # region ---- CONFIGURATION ----
 MANUAL_CONTROL = 0  # enable manual control if 1
 RESIZE = 1  # enable resize if 1
 CFG_SHOW_FRAMES = 1  # shows frames in windows
-CFG_TEST = 0  # test
+CFG_TEST = 1  # test
 CFG_RUN = CFG_TEST == 0  # run
 # endregion
 
@@ -33,7 +33,7 @@ CFG_RUN = CFG_TEST == 0  # run
 KEY_PRESSED = 1  # controls the frame steps
 __HEIGHT__ = 400
 __WIDTH__ = 600
-__PIXELCOUNT__ = __HEIGHT__ * __WIDTH__
+__PIXELCOUNT__ = 8_294_400#__HEIGHT__ * __WIDTH__
 __MUE__ = 0
 __SIGMA__ = 1
 __OMEGA__ = 2
@@ -114,15 +114,16 @@ def omega_update(omega_p, alpha_p, M_p):
     return (1 - alpha_p) * omega_p + alpha_p * M_p.T
 
 
-def M(pixel_p, sigma_p):
+def M(pixel_p, sigma_p, mue_p):
     """
     M algorithm
         @pixel_p: 3 element array
         @sigma_p
+        @mue_p
     """
     sigma_avg = np.mean(sigma_p, axis=1).T
 
-    a_min_b = mue_g.T - pixel_p.T
+    a_min_b = mue_p.T - pixel_p.T
     b = np.sqrt(np.einsum('ijk,ijk->ik', a_min_b, a_min_b))
     a = b - sigma_avg
     a[a < 0] = 0
@@ -211,16 +212,101 @@ while (CFG_RUN):
         break
         # endregion
 # endregion
-cap.release()
-cv.destroyAllWindows()
+
 
 # region ---- TEST ----
-if (CFG_TEST):
-    T_x = [np.arange(100), np.arange(100), np.arange(100)]
-    T_x = np.swapaxes(T_x, 0, 1)
+i=0
+while (CFG_TEST and i<5):
+
+    #TODO:
+    #    - import video frames
+    #    - flatten them
+    #    - resize
+    #    - redefine the storagematrix to new pixelcount
+    #    - apply the algorithm
+    #    - save runtime to file
+    #    - repeate many time
+
+    ret, frame = cap.read()
+    if ret == False:
+        print("Empty frame during test")
+
+
+    start = 0
+    stop = 0
     result = []
-    result_plot = np.squeeze(result)
-    plt.plot(result_plot)  # plots the 1st gaussian
-    plt.show()
+    pixel_count = int((np.shape(frame)[0]*np.shape(frame)[1]))
+    long_frame = np.reshape(frame, (pixel_count, 3))
+    meas_n = 60 #number of meas
+    print("started")
+
+    for meas_i in range(1,meas_n,1):
+
+        print("Loop:    ", meas_i)
+        pixels = int(((pixel_count/2)/meas_n) * meas_i)
+        test_frame = long_frame[:pixels]
+        dist = distribution_g[:pixels,:,:,:]
+
+        #########################################
+        # algorithm
+        start = time.time()
+        result = M(test_frame, dist[:, :, :, __SIGMA__], dist[:,:,:,__MUE__])
+        stop = time.time()
+        t1= stop-start
+
+        start = time.time()
+        dist[:, 0, :, __OMEGA__] = omega_update(dist[:, 0, :, __OMEGA__], alpha_g, result)
+        stop = time.time()
+        t2 = stop - start
+
+        start = time.time()
+        dist[:, :, :, __MUE__] = mue_update(ro_g, test_frame, dist[:, :, :, __MUE__], result)
+        stop = time.time()
+        t3 = stop - start
+
+        start = time.time()
+        dist[:, :, :, __SIGMA__] = sigma_updater(ro_g, test_frame, dist[:, :, :, __MUE__],
+                                                           dist[:, :, :, __SIGMA__], result)
+        stop = time.time()
+        t4 = stop - start
+
+        with open(log_file_path, 'a') as f:
+            print("{};{};{};{};{};".format(t1,t2,t3,t4,pixels),file=f)
+    print("Finished")
+    with open(log_file_path, 'a') as f:
+        print("0;0;0;0;0;", file=f)
+    print(i)
+    i = i+1
+"""
+    sigma_avg = distribution_g[:, :, :, __SIGMA__].sum(axis=1) / 3
+    omega_rec = 1 / distribution_g[:, 0, :, __OMEGA__]
+    B_all = np.einsum('ij,ij->ij', omega_rec, sigma_avg)
+    B_ext = [sigma_avg, B_all]
+    B_extArr = np.asarray(B_ext)
+    B_extArr[:, :, :2] = 20
+    B_extArr = np.moveaxis(B_extArr, 0, -1)
+    B_Res = []
+    for distr in B_extArr:
+        B_Res.append(sorted(distr, key=lambda x: x[1]))
+
+    B_sorted = np.asarray(B_Res)
+    B = B_sorted[:, :4, :]
+
+    # check if pixel is part of B:
+    background = M(long_frame, B[:, :, 0])
+
+    background = np.reshape(background, (7, 400, 600))
+
+    rr = background[:1] * 1.0
+    rrr = np.einsum('ijk->jki', rr)
+    mueimg = mue_g[:, :, 0] / 255.0
+    mueimg_reshape = np.reshape(mueimg, (400, 600, 3))
+
+    cv.imshow("1.png", rrr)
+    end = time.time()
+    print(end - start)
+"""
 
 # endregion
+cap.release()
+cv.destroyAllWindows()
