@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8197219a-60a6-4f49-90fa-7a109880723a" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/02_data/03_logs/time_log.txt" beforeDir="false" afterPath="$PROJECT_DIR$/02_data/03_logs/time_log.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py" beforeDir="false" afterPath="$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -19,13 +19,13 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="859">
-              <caret line="265" lean-forward="true" selection-start-line="265" selection-end-line="265" />
+            <state>
+              <caret line="248" column="9" selection-start-line="248" selection-start-column="9" selection-end-line="248" selection-end-column="9" />
               <folding>
+                <element signature="e#237#253#0" expanded="true" />
                 <element signature="e#1696#2199#0" />
                 <element signature="e#2249#2641#0" />
                 <element signature="e#2689#2970#0" />
-                <element signature="e#3325#6051#0" />
               </folding>
             </state>
           </provider>
@@ -191,13 +191,6 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py</url>
-          <line>147</line>
-          <option name="timeStamp" value="5" />
-        </line-breakpoint>
-      </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
           <properties notifyOnTerminate="true" exception="BaseException">
@@ -248,13 +241,13 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="859">
-          <caret line="265" lean-forward="true" selection-start-line="265" selection-end-line="265" />
+        <state>
+          <caret line="248" column="9" selection-start-line="248" selection-start-column="9" selection-end-line="248" selection-end-column="9" />
           <folding>
+            <element signature="e#237#253#0" expanded="true" />
             <element signature="e#1696#2199#0" />
             <element signature="e#2249#2641#0" />
             <element signature="e#2689#2970#0" />
-            <element signature="e#3325#6051#0" />
           </folding>
         </state>
       </provider>

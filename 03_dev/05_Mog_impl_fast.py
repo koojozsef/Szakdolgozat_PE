@@ -240,13 +240,15 @@ while (CFG_TEST and i<5):
     meas_n = 60 #number of meas
     print("started")
 
+    mog = cv.createBackgroundSubtractorMOG2()
     for meas_i in range(1,meas_n,1):
 
         print("Loop:    ", meas_i)
         pixels = int(((pixel_count/2)/meas_n) * meas_i)
         test_frame = long_frame[:pixels]
-        dist = distribution_g[:pixels,:,:,:]
+        #dist = distribution_g[:pixels,:,:,:]
 
+        """
         #########################################
         # algorithm
         start = time.time()
@@ -269,12 +271,17 @@ while (CFG_TEST and i<5):
                                                            dist[:, :, :, __SIGMA__], result)
         stop = time.time()
         t4 = stop - start
+        """
+        start = time.time()
+        mask= mog.apply(test_frame)
+        stop = time.time()
+        t1 = stop - start
 
         with open(log_file_path, 'a') as f:
-            print("{};{};{};{};{};".format(t1,t2,t3,t4,pixels),file=f)
+            print("{};{};".format(t1,pixels),file=f)
     print("Finished")
     with open(log_file_path, 'a') as f:
-        print("0;0;0;0;0;", file=f)
+        print("0;0;", file=f)
     print(i)
     i = i+1
 """
