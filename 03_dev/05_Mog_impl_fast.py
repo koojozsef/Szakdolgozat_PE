@@ -22,10 +22,10 @@ cap = cv.VideoCapture("D:\\joci\\EGYETEM\\_PE_MIK\\3_felev\\Szakdoga\\02_data\\0
 log_file_path = "../02_data/03_logs/time_log.txt"
 
 # region ---- CONFIGURATION ----
-MANUAL_CONTROL = 0  # enable manual control if 1
+MANUAL_CONTROL = 1  # enable manual control if 1
 RESIZE = 1  # enable resize if 1
 CFG_SHOW_FRAMES = 1  # shows frames in windows
-CFG_TEST = 1  # test
+CFG_TEST = 0  # test
 CFG_RUN = CFG_TEST == 0  # run
 # endregion
 
@@ -33,7 +33,7 @@ CFG_RUN = CFG_TEST == 0  # run
 KEY_PRESSED = 1  # controls the frame steps
 __HEIGHT__ = 400
 __WIDTH__ = 600
-__PIXELCOUNT__ = 8_294_400#__HEIGHT__ * __WIDTH__
+__PIXELCOUNT__ = __HEIGHT__ * __WIDTH__
 __MUE__ = 0
 __SIGMA__ = 1
 __OMEGA__ = 2
@@ -165,7 +165,7 @@ while (CFG_RUN):
         start = time.time()
         result = []
         long_frame = np.reshape(frame_r, (__PIXELCOUNT__, 3))
-        result = M(long_frame, distribution_g[:, :, :, __SIGMA__])
+        result = M(long_frame, distribution_g[:, :, :, __SIGMA__],distribution_g[:, :, :, __MUE__])
         distribution_g[:, 0, :, __OMEGA__] = omega_update(distribution_g[:, 0, :, __OMEGA__], alpha_g, result)
         distribution_g[:, :, :, __MUE__] = mue_update(ro_g, long_frame, distribution_g[:, :, :, __MUE__], result)
         distribution_g[:, :, :, __SIGMA__] = sigma_updater(ro_g, long_frame, distribution_g[:, :, :, __MUE__],
@@ -189,16 +189,16 @@ while (CFG_RUN):
         B = B_sorted[:, :4, :]
 
         # check if pixel is part of B:
-        background = M(long_frame, B[:, :, 0])
+        background = M(long_frame, B[:, :, 0], distribution_g[:, :, :, __MUE__])
 
         background = np.reshape(background, (7, 400, 600))
 
         rr = background[:1] * 1.0
         rrr = np.einsum('ijk->jki', rr)
-        mueimg = mue_g[:, :, 0] / 255.0
+        mueimg = distribution_g[:, :, 0, __MUE__] / 255.0
         mueimg_reshape = np.reshape(mueimg, (400, 600, 3))
 
-        cv.imshow("1.png", rrr)
+        cv.imshow("1.png", mueimg_reshape)
         end = time.time()
         print(end - start)
         # result_shape = np.shape(frame_r)

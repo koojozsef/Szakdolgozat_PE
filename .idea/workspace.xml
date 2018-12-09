@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8197219a-60a6-4f49-90fa-7a109880723a" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/02_data/03_logs/time_log.txt" beforeDir="false" afterPath="$PROJECT_DIR$/02_data/03_logs/time_log.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py" beforeDir="false" afterPath="$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -19,8 +19,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret line="248" column="9" selection-start-line="248" selection-start-column="9" selection-end-line="248" selection-end-column="9" />
+            <state relative-caret-position="153">
+              <caret line="24" column="18" selection-start-line="24" selection-start-column="18" selection-end-line="24" selection-end-column="18" />
               <folding>
                 <element signature="e#237#253#0" expanded="true" />
                 <element signature="e#1696#2199#0" />
@@ -241,8 +241,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret line="248" column="9" selection-start-line="248" selection-start-column="9" selection-end-line="248" selection-end-column="9" />
+        <state relative-caret-position="153">
+          <caret line="24" column="18" selection-start-line="24" selection-start-column="18" selection-end-line="24" selection-end-column="18" />
           <folding>
             <element signature="e#237#253#0" expanded="true" />
             <element signature="e#1696#2199#0" />
