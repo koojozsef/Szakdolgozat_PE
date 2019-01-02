@@ -48,7 +48,7 @@ TASKS:
 
 # region ---- GLOBAL PARAMETERS ----
 omega_g = (.5 * np.ones((__PIXELCOUNT__, 3, 7))).astype('f')
-mue_g = (5 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
+mue_g = (128 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
 sigma_g = (10 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
 
 """distribution_g
@@ -59,7 +59,7 @@ sigma_g = (10 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
 """
 distribution_g = np.stack((mue_g, sigma_g, omega_g), axis=3)
 alpha_g = .6
-ro_g = .5
+ro_g = .4
 
 
 # endregion
@@ -95,7 +95,8 @@ def mue_update(ro_p, pixel_p, mue_p, M_p):
         @M_p:
     """
     a = (1 - ro_p) * mue_p
-    b = np.einsum('ijk,ij->ijk', a, (ro_p * pixel_p))
+    aa = (ro_p * pixel_p)
+    b = (a.T+aa.T).T    # addition instead of multiplication: b = np.einsum('ijk,ij->ijk', a, aa)
     mue = np.einsum('ijk,ki->ijk', b, M_p)
     # d= (1-M_p)*mue_p
     c = np.einsum('ij,jki->jki', (1 - M_p), mue_p)  # M_p*(a.T + b.T) + d
@@ -198,7 +199,7 @@ while (CFG_RUN):
         mueimg = distribution_g[:, :, 0, __MUE__] / 255.0
         mueimg_reshape = np.reshape(mueimg, (400, 600, 3))
 
-        cv.imshow("1.png", mueimg_reshape)
+        cv.imshow("1.png", rrr)
         end = time.time()
         print(end - start)
         # result_shape = np.shape(frame_r)
