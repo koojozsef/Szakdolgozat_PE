@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
+<<<<<<< Updated upstream
     <list default="true" id="8197219a-60a6-4f49-90fa-7a109880723a" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py" beforeDir="false" afterPath="$PROJECT_DIR$/03_dev/05_Mog_impl_fast.py" afterDir="false" />
     </list>
+=======
+    <list default="true" id="8197219a-60a6-4f49-90fa-7a109880723a" name="Default Changelist" comment="" />
+>>>>>>> Stashed changes
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -139,10 +143,9 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1066" extended-state="6" />
-    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49520767" visible="true" weight="0.18710022" />
-      <window_info id="Structure" order="1" sideWeight="0.50479233" side_tool="true" visible="true" weight="0.18710022" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49624866" visible="true" weight="0.18710022" />
+      <window_info id="Structure" order="1" sideWeight="0.50375134" side_tool="true" visible="true" weight="0.18710022" />
       <window_info id="Favorites" order="2" sideWeight="0.5009597" side_tool="true" weight="0.2496329" />
       <window_info anchor="bottom" id="Version Control" order="0" weight="0.3298731" />
       <window_info anchor="bottom" id="Python Console" order="1" />
@@ -150,14 +153,14 @@
       <window_info anchor="bottom" id="Event Log" order="3" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="4" />
       <window_info anchor="bottom" id="Find" order="5" />
-      <window_info active="true" anchor="bottom" id="Run" order="6" visible="true" weight="0.3290461" />
+      <window_info anchor="bottom" id="Run" order="6" weight="0.3290461" />
       <window_info anchor="bottom" id="Cvs" order="7" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="8" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="9" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-      <window_info anchor="right" id="Debug" order="3" side_tool="true" visible="true" weight="0.28464818" />
+      <window_info anchor="right" id="Debug" order="3" side_tool="true" weight="0.28464818" />
     </layout>
   </component>
   <component name="editorHistoryManager">
