@@ -3,7 +3,9 @@ import sys
 import cv2
 from random import randint
 
+
 trackerTypes = ['BOOSTING', 'MIL', 'KCF','TLD', 'MEDIANFLOW', 'GOTURN', 'MOSSE', 'CSRT']
+trackerType = trackerTypes[3]
 
 def createTrackerByName(trackerType):
     # Create a tracker based on tracker name
@@ -32,14 +34,14 @@ def createTrackerByName(trackerType):
     return tracker
 
 
-
 def main():
     #createTrackerByName(trackerTypes[0])
 
-    videoPath = "../02_data/01_vid/square.mp4"
+    videoPath = "D:/joci/projects/Szakdoga_PE/Szakdoga/Dataset/Video/traffic.mp4"
 
     # Create a video capture object to read videos
     cap = cv2.VideoCapture(videoPath)
+
 
     # Read first frame
     success, frame = cap.read()
@@ -47,6 +49,8 @@ def main():
     if not success:
         print('Failed to read video')
         sys.exit(1)
+
+    frame = cv2.resize(frame, (1280, 720))
 
     # Select boxes
     bboxes = []
@@ -74,13 +78,14 @@ def main():
 
     # Initialize MultiTracker
     for bbox in bboxes:
-        multiTracker.add(createTrackerByName(trackerTypes[0]), frame, bbox)
+        multiTracker.add(createTrackerByName(trackerType), frame, bbox)
 
     # Process video and track objects
     while cap.isOpened():
         success, frame = cap.read()
         if not success:
             break
+        frame = cv2.resize(frame, (1280, 720))
 
         # get updated location of objects in subsequent frames
         success, boxes = multiTracker.update(frame)
