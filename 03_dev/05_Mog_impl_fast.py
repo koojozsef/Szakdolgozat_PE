@@ -64,6 +64,15 @@ ro_g = .4
 
 # endregion
 
+def captureImage(folderName, imageStringWithoutNumber, fileFormat, i):
+    if True and isinstance(folderName, str) \
+            and isinstance(imageStringWithoutNumber, str) \
+            and isinstance(fileFormat, str):
+
+        path = str(folderName).replace('\\','/') + '/'
+        genPath = str(path + imageStringWithoutNumber + "%04d" % i + fileFormat)
+        image = cv.imread(genPath)
+        return image
 
 def sigma_updater(ro_p, pixel_p, mue_p, sigma_p, M_p):
     """
@@ -132,9 +141,12 @@ def M(pixel_p, sigma_p, mue_p):
 
     return a.astype(bool)
 
-
+imageId = 275
 while (CFG_RUN):
-    ret, frame = cap.read()
+    frame = captureImage("D:\joci\projects\Szakdoga_PE\Szakdoga\Dataset\Yaser\GroundtruthSeq\RawImages","seq00.avi",".bmp",275)
+    imageId = imageId+1
+    ret = True
+    #ret, frame = cap.read()
 
     # region---- control frame on key ----
     if KEY_PRESSED == 0 and MANUAL_CONTROL == 1 and CFG_SHOW_FRAMES == 1:
@@ -153,7 +165,7 @@ while (CFG_RUN):
 
         # region---- resize frame ----
         if RESIZE == True:
-            frame_r = cv.resize(frame, (600, 400))
+            frame_r = cv.resize(frame, (__WIDTH__, __HEIGHT__))
         else:
             frame_r = frame
         # endregion
@@ -199,11 +211,13 @@ while (CFG_RUN):
         mueimg = distribution_g[:, :, 0, __MUE__] / 255.0
         mueimg_reshape = np.reshape(mueimg, (400, 600, 3))
 
-        cv.imshow("1.png", rrr)
+        cv.imshow("1.png", rrr) # how to show image with one channel???
         end = time.time()
         print(end - start)
-        # result_shape = np.shape(frame_r)
-        # result = np.reshape(result,result_shape[:2])
+        #result_shape = np.shape(frame_r)
+        #result1 = np.reshape(result[0],result_shape[:2])
+        #result1 = result1*1.0
+        #cv.imshow('res',result1)
         # endregion
 
         # region ---- exit on 'esc' key ----
