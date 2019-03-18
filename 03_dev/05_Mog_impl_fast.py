@@ -42,7 +42,7 @@ __OMEGA__ = 2
 TASKS:
     - [DONE] Implement background decider M()
     - [DONE] Evaluate omega value
-    - Evaluate mue and sigma
+    - [DONE] Evaluate mue and sigma
     - Create B list
 """
 
@@ -57,7 +57,7 @@ mue_g[:,:,4] = mue_g[:,:,4]*150
 mue_g[:,:,5] = mue_g[:,:,5]*180
 mue_g[:,:,6] = mue_g[:,:,6]*200
 
-sigma_g = (1 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
+sigma_g = (20 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
 
 """distribution_g
     axis 0 :    0 - __PIXELCOUNT__  : pixel identifier
@@ -136,14 +136,14 @@ def M(pixel_p, sigma_p, mue_p):
     """
     M algorithm
         @pixel_p: 3 element array
-        @sigma_p
+        @sigma_p: avarage of sigmas
         @mue_p
     """
-    sigma_avg = np.mean(sigma_p, axis=1).T
+    #sigma_avg = np.mean(sigma_p, axis=1).T
 
     a_min_b = mue_p.T - pixel_p.T
     b = np.sqrt(np.einsum('ijk,ijk->ik', a_min_b, a_min_b))
-    a = b - 2.5*sigma_avg
+    a = b - 2.5*sigma_p.T
     a[a < 0] = 0
     a[a > 0] = 1
 
@@ -189,37 +189,48 @@ while (CFG_RUN):
         start = time.time()
         result = []
         long_frame = np.reshape(frame_r, (__PIXELCOUNT__, 3))
-        result = M(long_frame, distribution_g[:, :, :, __SIGMA__],distribution_g[:, :, :, __MUE__])
+        sigma_avg = distribution_g[:, :, :, __SIGMA__].sum(axis=1) / 3
+        result = M(long_frame, sigma_avg,distribution_g[:, :, :, __MUE__])
         distribution_g[:, 0, :, __OMEGA__] = omega_update(distribution_g[:, 0, :, __OMEGA__], alpha_g, result)
         distribution_g[:, :, :, __MUE__] = mue_update(ro_g, long_frame, distribution_g[:, :, :, __MUE__], result)
         distribution_g[:, :, :, __SIGMA__] = sigma_updater(ro_g, long_frame, distribution_g[:, :, :, __MUE__],
                                                            distribution_g[:, :, :, __SIGMA__], result)
 
-        # test
-        sigma_g[:, :1, :2] = 20
-        # test end
-        sigma_avg = distribution_g[:, :, :, __SIGMA__].sum(axis=1) / 3
-        omega_rec = 1 / distribution_g[:, 0, :, __OMEGA__]
-        B_all = np.einsum('ij,ij->ij', omega_rec, sigma_avg)
-        B_ext = [sigma_avg, B_all]
-        B_extArr = np.asarray(B_ext)
-        B_extArr[:, :, :2] = 20
-        B_extArr = np.moveaxis(B_extArr, 0, -1)
-        B_Res = []
-        for distr in B_extArr:
-            B_Res.append(sorted(distr, key=lambda x: x[1]))
 
-        B_sorted = np.asarray(B_Res)
-        B = B_sorted[:, :4, :]
+        omega_rec = 1 / distribution_g[:, 0, :, __OMEGA__]
+        B_all = np.einsum('ij,ij->ij', omega_rec, sigma_avg) # stores the ordering value for every pixel and every distribution
+        B_indx = np.argpartition(B_all,4)[:,-4:] # Returns the top 4 distributions index
+        # B_ext = [sigma_avg, B_all]
+        # B_extArr = np.asarray(B_ext)
+        # B_extArr = np.moveaxis(B_extArr, 0, -1)
+        # B_Res = []
+        # for distr in B_extArr:
+        #     B_Res.append(sorted(distr, key=lambda x: x[1]))
+        # B_sorted = np.asarray(B_Res)
+        # B = B_sorted[:, :4, :]
+
+        sigma_top = np.zeros((__PIXELCOUNT__, 4))
+        row_n = 0
+        for row in sigma_avg:
+            a = row[B_indx[row_n]]
+            sigma_top[row_n] = a
+            row_n = row_n+1
+
+        mue_top = np.zeros((__PIXELCOUNT__, 3, 4))
+        row_n = 0
+        for row in distribution_g:
+            a = row[:,B_indx[row_n],__MUE__]
+            mue_top[row_n] = a
+            row_n = row_n + 1
 
         # check if pixel is part of B:
-        background = M(long_frame, B[:, :, 0], distribution_g[:, :, :, __MUE__])
+        background = M(long_frame, sigma_top, mue_top)
 
-        background = np.reshape(background, (7, 400, 600))
+        background = np.reshape(background, (4, 400, 600))
 
-        rr = background[5:6:1] * 1.0
-        rr = np.prod(background,0)
-        #rrr = np.einsum('ijk->jki', rr)
+        rr = background[:1] * 1.0
+        #rr = np.prod(background,0)
+        rr = np.einsum('ijk->jki', rr)
         mueimg = distribution_g[:, :, 0, __MUE__] / 255.0
         mueimg_reshape = np.reshape(mueimg, (400, 600, 3))
 
