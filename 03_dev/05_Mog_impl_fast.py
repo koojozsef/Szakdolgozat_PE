@@ -22,7 +22,7 @@ cap = cv.VideoCapture("D:\\joci\\EGYETEM\\_PE_MIK\\3_felev\\Szakdoga\\02_data\\0
 log_file_path = "../02_data/03_logs/time_log.txt"
 
 # region ---- CONFIGURATION ----
-MANUAL_CONTROL = 1  # enable manual control if 1
+MANUAL_CONTROL = 0  # enable manual control if 1
 RESIZE = 1  # enable resize if 1
 CFG_SHOW_FRAMES = 1  # shows frames in windows
 CFG_TEST = 0  # test
@@ -57,7 +57,7 @@ mue_g[:,:,4] = mue_g[:,:,4]*150
 mue_g[:,:,5] = mue_g[:,:,5]*180
 mue_g[:,:,6] = mue_g[:,:,6]*200
 
-sigma_g = (20 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
+sigma_g = (10 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
 
 """distribution_g
     axis 0 :    0 - __PIXELCOUNT__  : pixel identifier
@@ -67,7 +67,7 @@ sigma_g = (20 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
 """
 distribution_g = np.stack((mue_g, sigma_g, omega_g), axis=3)
 alpha_g = .5
-ro_g = .5
+ro_g = .2
 
 
 # endregion
@@ -144,9 +144,9 @@ def M(pixel_p, sigma_p, mue_p):
     a_min_b = mue_p.T - pixel_p.T
     b = np.sqrt(np.einsum('ijk,ijk->ik', a_min_b, a_min_b))
     a = b - 2.5*sigma_p.T
-    a[a < 0] = 0
-    a[a > 0] = 1
 
+    a[a > 0] = 0
+    a[a < 0] = 1
     return a.astype(bool)
 
 imageId = 275
@@ -191,10 +191,12 @@ while (CFG_RUN):
         long_frame = np.reshape(frame_r, (__PIXELCOUNT__, 3))
         sigma_avg = distribution_g[:, :, :, __SIGMA__].sum(axis=1) / 3
         result = M(long_frame, sigma_avg,distribution_g[:, :, :, __MUE__])
-        distribution_g[:, 0, :, __OMEGA__] = omega_update(distribution_g[:, 0, :, __OMEGA__], alpha_g, result)
-        distribution_g[:, :, :, __MUE__] = mue_update(ro_g, long_frame, distribution_g[:, :, :, __MUE__], result)
+        resultTrue = result.copy()
+        resultTrue[resultTrue == 0] = True
+        distribution_g[:, 0, :, __OMEGA__] = omega_update(distribution_g[:, 0, :, __OMEGA__], alpha_g, resultTrue)
+        distribution_g[:, :, :, __MUE__] = mue_update(ro_g, long_frame, distribution_g[:, :, :, __MUE__], resultTrue)
         distribution_g[:, :, :, __SIGMA__] = sigma_updater(ro_g, long_frame, distribution_g[:, :, :, __MUE__],
-                                                           distribution_g[:, :, :, __SIGMA__], result)
+                                                           distribution_g[:, :, :, __SIGMA__], resultTrue)
 
 
         omega_rec = 1 / distribution_g[:, 0, :, __OMEGA__]
@@ -228,15 +230,16 @@ while (CFG_RUN):
 
         background = np.reshape(background, (4, 400, 600))
 
-        rr = background[:1] * 1.0
-        #rr = np.prod(background,0)
-        rr = np.einsum('ijk->jki', rr)
-        mueimg = distribution_g[:, :, 0, __MUE__] / 255.0
-        mueimg_reshape = np.reshape(mueimg, (400, 600, 3))
+        rr = background * 1.0
+        #rr = np.sum(rr,axis=0) == 0 # detect if any distribution is 1
+        #rr = np.einsum('ijk->jki', rr)
+        mueimg = mue_top[:,:,0]
+        mueimg_reshape = np.uint8(np.reshape(mueimg, (400, 600, 3)))
 
-        rrr = np.uint8(rr * 255)
+        rrr = np.uint8(rr[0] * 255)
 
-        cv.imshow("1.png", rrr)
+        cv.imshow("1.png", mueimg_reshape)
+        cv.imshow("2.png", rrr)
         end = time.time()
         print(end - start)
         # result_shape = np.shape(frame_r)
