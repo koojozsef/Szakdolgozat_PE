@@ -47,9 +47,17 @@ TASKS:
 """
 
 # region ---- GLOBAL PARAMETERS ----
-omega_g = (.5 * np.ones((__PIXELCOUNT__, 3, 7))).astype('f')
-mue_g = (128 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
-sigma_g = (10 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
+omega_g = (.2 * np.ones((__PIXELCOUNT__, 3, 7))).astype('f')
+mue_g = (1 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
+mue_g[:,:,0] = mue_g[:,:,0]*30
+mue_g[:,:,1] = mue_g[:,:,1]*60
+mue_g[:,:,2] = mue_g[:,:,2]*90
+mue_g[:,:,3] = mue_g[:,:,3]*120
+mue_g[:,:,4] = mue_g[:,:,4]*150
+mue_g[:,:,5] = mue_g[:,:,5]*180
+mue_g[:,:,6] = mue_g[:,:,6]*200
+
+sigma_g = (1 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
 
 """distribution_g
     axis 0 :    0 - __PIXELCOUNT__  : pixel identifier
@@ -58,12 +66,21 @@ sigma_g = (10 * np.ones((__PIXELCOUNT__, 3, 7))).astype(int)
     axis 3 :            0 - 3       : mue,sigma,omega parameters
 """
 distribution_g = np.stack((mue_g, sigma_g, omega_g), axis=3)
-alpha_g = .6
-ro_g = .4
+alpha_g = .5
+ro_g = .5
 
 
 # endregion
 
+def captureImage(folderName, imageStringWithoutNumber, fileFormat, i):
+    if True and isinstance(folderName, str) \
+            and isinstance(imageStringWithoutNumber, str) \
+            and isinstance(fileFormat, str):
+
+        path = str(folderName).replace('\\','/') + '/'
+        genPath = str(path + imageStringWithoutNumber + "%04d" % i + fileFormat)
+        image = cv.imread(genPath)
+        return image
 
 def sigma_updater(ro_p, pixel_p, mue_p, sigma_p, M_p):
     """
@@ -126,15 +143,21 @@ def M(pixel_p, sigma_p, mue_p):
 
     a_min_b = mue_p.T - pixel_p.T
     b = np.sqrt(np.einsum('ijk,ijk->ik', a_min_b, a_min_b))
-    a = b - sigma_avg
+    a = b - 2.5*sigma_avg
     a[a < 0] = 0
     a[a > 0] = 1
 
     return a.astype(bool)
 
-
+imageId = 275
 while (CFG_RUN):
-    ret, frame = cap.read()
+    frame = captureImage("D:\joci\projects\Szakdoga_PE\Szakdoga\Dataset\Yaser\GroundtruthSeq\RawImages",
+                         "seq00.avi",
+                         ".bmp",
+                         imageId)
+    imageId = imageId+1
+    ret = True
+    #ret, frame = cap.read()
 
     # region---- control frame on key ----
     if KEY_PRESSED == 0 and MANUAL_CONTROL == 1 and CFG_SHOW_FRAMES == 1:
@@ -153,7 +176,7 @@ while (CFG_RUN):
 
         # region---- resize frame ----
         if RESIZE == True:
-            frame_r = cv.resize(frame, (600, 400))
+            frame_r = cv.resize(frame, (__WIDTH__, __HEIGHT__))
         else:
             frame_r = frame
         # endregion
@@ -194,16 +217,21 @@ while (CFG_RUN):
 
         background = np.reshape(background, (7, 400, 600))
 
-        rr = background[:1] * 1.0
-        rrr = np.einsum('ijk->jki', rr)
+        rr = background[5:6:1] * 1.0
+        rr = np.prod(background,0)
+        #rrr = np.einsum('ijk->jki', rr)
         mueimg = distribution_g[:, :, 0, __MUE__] / 255.0
         mueimg_reshape = np.reshape(mueimg, (400, 600, 3))
+
+        rrr = np.uint8(rr * 255)
 
         cv.imshow("1.png", rrr)
         end = time.time()
         print(end - start)
         # result_shape = np.shape(frame_r)
-        # result = np.reshape(result,result_shape[:2])
+        # result1 = np.reshape(result[0],result_shape[:2])
+        # result1 = result1*1.0
+        # cv.imshow('res',result1)
         # endregion
 
         # region ---- exit on 'esc' key ----
