@@ -29,14 +29,14 @@ CFG_RUN = CFG_TEST == 0  # run
 
 # region ---- CODE ----
 KEY_PRESSED = 1  # controls the frame steps
-__HEIGHT__ = 400
-__WIDTH__ = 600
+__HEIGHT__ = 120
+__WIDTH__ = 160
 __PIXELCOUNT__ = __HEIGHT__ * __WIDTH__
 __MUE__ = 0
 __SIGMA__ = 1
 __OMEGA__ = 2
-__DIST_N__ = 7
-__DIST_BG__ = 4
+__DIST_N__ = 10
+__DIST_BG__ = 6
 
 if VIDEO == 1:
     cap = cv.VideoCapture("D:\\joci\\EGYETEM\\_PE_MIK\\3_felev\\Szakdoga\\02_data\\01_vid\\square.mp4")
@@ -74,9 +74,9 @@ distribution_g = np.stack((mue_g, sigma_g, omega_g), axis=3)
     axis 3 :            0 - 3       : mue,sigma,omega parameters
 """
 foreground_dist_g = np.zeros((__PIXELCOUNT__, 3, 1, 3))
-alpha_g = .8
-ro_g = .2
-ro_g_fg = .7
+alpha_g = .2
+ro_g = .7
+ro_g_fg = .5
 
 
 # endregion
@@ -101,16 +101,16 @@ def sigma_updater(ro_p, pixel_p, mue_p, sigma_p, M_p):
         @M_p
     """
     distance = mue_p.T - pixel_p.T
-    distance_sq = np.einsum('ijk,ijk->ijk', distance, distance)
-    sigma_p_sq = np.einsum('ijk,ijk->ijk', sigma_p, sigma_p)
+    distance_sq = np.einsum('ijk,ijk->ik', distance, distance)
+    sigma_p_sq = np.einsum('ijk,ijk->ik', sigma_p, sigma_p)
 
-    aa = (1 - ro_p) * sigma_p_sq * (sigma_p_sq > 1000)
-    a = sigma_p_sq * (aa == 0) + aa
+    a = (1 - ro_p) * sigma_p_sq
     b = ro_p * distance_sq.T
-    c = np.einsum('ijk,ki->ijk', a + b, M_p)
-    d = np.einsum('ijk,ki->ijk', sigma_p_sq, (1 - M_p))
+    c = np.einsum('ik,ki->ik', a + b, M_p)
+    d = np.einsum('ik,ki->ik', sigma_p_sq, (1 - M_p))
     sigma_sq = c + d
-    sigma_ret = np.sqrt(sigma_sq)
+    r = np.sqrt(sigma_sq)
+    sigma_ret = np.stack((r, r, r), axis=1)
     return sigma_ret
 
 
@@ -161,12 +161,12 @@ def M(pixel_p, sigma_p, mue_p):
     return a.astype(bool)
 
 
-imageId = 270
+imageId = 625
 previous_background = np.ones((1, __PIXELCOUNT__))
 while (CFG_RUN):
     if VIDEO == 0:
-        frame = captureImage("D:\joci\projects\Szakdoga_PE\Szakdoga\Dataset\Yaser\GroundtruthSeq\RawImages",
-                             "seq00.avi",
+        frame = captureImage("D:\joci\projects\Szakdoga_PE\Szakdoga\Dataset\WallFlower\MovedObject",
+                             "b0",
                              ".bmp",
                              imageId)
         imageId = imageId + 1
@@ -214,7 +214,7 @@ while (CFG_RUN):
         omega_rec = 1 / distribution_g[:, 0, :, __OMEGA__]
         B_all = np.einsum('ij,ij->ij', omega_rec,
                           sigma_avg)  # stores the ordering value for every pixel and every distribution
-        B_indx = np.argpartition(B_all, __DIST_BG__)[:, -__DIST_BG__:]  # Returns the top 4 distributions index
+        B_indx = np.argpartition(B_all, (__DIST_BG__))[:, -__DIST_BG__:]  # Returns the top __DIST_BG__ distributions index
         B_indx_min = np.argpartition(B_all, 1)[:, 0]  # Returns the lowest 1 distribution index
         # B_ext = [sigma_avg, B_all]
         # B_extArr = np.asarray(B_ext)
@@ -259,29 +259,30 @@ while (CFG_RUN):
                                                           foreground_dist_g[..., __SIGMA__], np.logical_not(background))
 
         # turn to background only when sigma is low
-        low_sigmas = (foreground_dist_g[...].T * (foreground_dist_g[..., __SIGMA__] < 10).T).T
+        low_sigmas = (foreground_dist_g[...].T * (foreground_dist_g[..., __SIGMA__] < 20).T).T
 
-        foreground_dist_g = (foreground_dist_g.T * (foreground_dist_g[..., __SIGMA__] >= 10).T).T
+        foreground_dist_g = (foreground_dist_g.T * (foreground_dist_g[..., __SIGMA__] >= 20).T).T
 
         for row in range(__PIXELCOUNT__):
             if low_sigmas[row, :, 0, __MUE__].any() > 0:
                 distribution_g[row, :, B_indx_min[row], __MUE__] = low_sigmas[row, :, 0, __MUE__]
                 distribution_g[row, :, B_indx_min[row], __SIGMA__] = low_sigmas[row, :, 0, __SIGMA__]
-                distribution_g[row, :, B_indx_min[row], __OMEGA__] = 1.
+                distribution_g[row, 0, B_indx_min[row], __OMEGA__] = 1.
 
+        print(np.max(foreground_dist_g[:, 0, 0, __OMEGA__]))
         # plot for test
-        fg_image = np.uint8(np.reshape(foreground_dist_g[:, :, 0, __MUE__], (3, __HEIGHT__, __WIDTH__)))
+        fg_image = np.uint8(np.reshape(foreground_dist_g[:, :, 0, __OMEGA__]*255, (3, __HEIGHT__, __WIDTH__)))
         fg_image = np.reshape(fg_image, (__HEIGHT__, __WIDTH__, 3))
         cv.imshow("foreground", fg_image)
         # endregion foreground model
 
-        background = np.reshape(background, (400, 600))
+        background = np.reshape(background, (__HEIGHT__, __WIDTH__))
 
         rr = background * 1.0
         # rr = np.sum(rr,axis=0) # detect if any distribution is 1
         # rr = np.einsum('ijk->jki', rr)
         mueimg = mue_top[:, :, 0]
-        mueimg_reshape = np.uint8(np.reshape(mueimg, (400, 600, 3)))
+        mueimg_reshape = np.uint8(np.reshape(mueimg, (__HEIGHT__, __WIDTH__, 3)))
 
         rrr = np.uint8(rr * 255)
 
