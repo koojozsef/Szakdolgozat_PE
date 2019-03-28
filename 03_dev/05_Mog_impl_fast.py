@@ -20,7 +20,7 @@ from matplotlib import pyplot as plt
 
 # region ---- CONFIGURATION ----
 VIDEO = 0
-MANUAL_CONTROL = 0  # enable manual control if 1
+MANUAL_CONTROL = 1  # enable manual control if 1
 RESIZE = 1  # enable resize if 1
 CFG_SHOW_FRAMES = 1  # shows frames in windows
 CFG_TEST = 0  # test
@@ -57,7 +57,7 @@ for n in range(__DIST_N__):
     x = n * int(255 / (__DIST_N__-1))
     mue_g[:, :, n] = mue_g[:, :, n] * x
 
-sigma_g = (150 * np.ones((__PIXELCOUNT__, 3, __DIST_N__))).astype(int)
+sigma_g = (10 * np.ones((__PIXELCOUNT__, 3, __DIST_N__))).astype(int)
 
 """distribution_g
     axis 0 :    0 - __PIXELCOUNT__  : pixel identifier
@@ -74,8 +74,8 @@ distribution_g = np.stack((mue_g, sigma_g, omega_g), axis=3)
     axis 3 :            0 - 3       : mue,sigma,omega parameters
 """
 foreground_dist_g = np.zeros((__PIXELCOUNT__, 3, 1, 3))
-alpha_g = .2
-ro_g = .7
+alpha_g = .5
+ro_g = .75
 ro_g_fg = .5
 
 
@@ -250,7 +250,7 @@ while (CFG_RUN):
         # mue
         foreground_dist_g[..., 0, __MUE__] = (long_frame.T * new_foreground).T
         # sigma
-        foreground_dist_g[..., 0, __SIGMA__] = (50 * np.ones((__PIXELCOUNT__, 3)).T * new_foreground).T
+        foreground_dist_g[..., 0, __SIGMA__] = (20 * np.ones((__PIXELCOUNT__, 3)).T * new_foreground).T
 
         # update parameters
         foreground_dist_g[..., __MUE__] = mue_update(ro_g_fg, long_frame, foreground_dist_g[..., __MUE__],
@@ -259,9 +259,9 @@ while (CFG_RUN):
                                                           foreground_dist_g[..., __SIGMA__], np.logical_not(background))
 
         # turn to background only when sigma is low
-        low_sigmas = (foreground_dist_g[...].T * (foreground_dist_g[..., __SIGMA__] < 20).T).T
+        low_sigmas = (foreground_dist_g[...].T * (foreground_dist_g[..., __SIGMA__] < 5).T).T
 
-        foreground_dist_g = (foreground_dist_g.T * (foreground_dist_g[..., __SIGMA__] >= 20).T).T
+        foreground_dist_g = (foreground_dist_g.T * (foreground_dist_g[..., __SIGMA__] >= 5).T).T
 
         for row in range(__PIXELCOUNT__):
             if low_sigmas[row, :, 0, __MUE__].any() > 0:
