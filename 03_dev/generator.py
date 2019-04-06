@@ -25,7 +25,7 @@ def procImage(fg_p, bg_p):
     return ret * 255
 
 
-def save_image(bg_path,fg_path,orig_dest):
+def save_image(bg_path, fg_path, orig_dest):
     cap = cv.VideoCapture("D:\\joci\\projects\\Szakdoga_PE\\Szakdoga\\Dataset\\Generated\\greenScreen\\" + fg_path + ".mp4")
     cap_bg = cv.VideoCapture("D:\\joci\\projects\\Szakdoga_PE\\Szakdoga\\Dataset\\Generated\\background\\" + bg_path + ".mp4")
     dest_folder = "D:\\joci\\projects\\Szakdoga_PE\\Szakdoga\\Dataset\\Generated\\database\\" + orig_dest + "\\orig\\"
@@ -48,7 +48,7 @@ def save_image(bg_path,fg_path,orig_dest):
     kernel = np.ones((5, 5), np.uint8)
 
     lower = np.array([0, 100, 0])
-    upper = np.array([80, 255, 80])
+    upper = np.array([85, 255, 190])
 
     im_num = 0
     while (True):
@@ -67,9 +67,11 @@ def save_image(bg_path,fg_path,orig_dest):
         img_fg = frame
 
         mask = cv.inRange(frame, lower, upper)
+        mask[300:, 450:] = [255]
         frame[mask != 0] = [0, 0, 0]
         background[mask == 0] = [0, 0, 0]
         outputImage = frame + background
+        # cv.imshow("kmkl", np.uint8(frame))
         # outputImage = np.where(frame == (0, 255, 0), background, frame)
         mask = 255 - mask
 
@@ -77,8 +79,9 @@ def save_image(bg_path,fg_path,orig_dest):
         cv.imwrite(mask_folder + "%04d" % im_num + ".png", mask)
 
         # img_res = procImage(img_fg, img_bg)
-
+        # cv.waitKey()
         # cv.imshow("mask", np.uint8(img_res))
+
         im_num = im_num + 1
 
         print(dest_folder)
@@ -92,8 +95,8 @@ def main():
                "walk2", "walk3", "walk4", "raptor", "girl", "dance"]
 
     for bg in bg_name:
-        for fg in fg_name:
-            save_image(bg, fg, str(bg + "_" + fg))
+        save_image(bg, "raptor", str(bg + "_" + "raptor"))
+
 
 if __name__ == "__main__":
     main()
