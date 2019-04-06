@@ -19,8 +19,8 @@ import time
 from matplotlib import pyplot as plt
 
 # region ---- CONFIGURATION ----
-VIDEO = 1
-MANUAL_CONTROL = 0  # enable manual control if 1
+VIDEO = 0
+MANUAL_CONTROL = 1  # enable manual control if 1
 RESIZE = 1  # enable resize if 1
 CFG_SHOW_FRAMES = 1  # shows frames in windows
 CFG_TEST = 0  # test
@@ -29,15 +29,14 @@ CFG_RUN = CFG_TEST == 0  # run
 
 # region ---- CODE ----
 KEY_PRESSED = 1  # controls the frame steps
-__HEIGHT__ = 400
-__WIDTH__ = 600
+__HEIGHT__ = 120
+__WIDTH__ = 160
 __PIXELCOUNT__ = __HEIGHT__ * __WIDTH__
 __MUE__ = 0
 __SIGMA__ = 1
 __OMEGA__ = 2
-__DIST_N__ = 7
-__DIST_BG__ = 4
-
+__DIST_N__ = 10
+__DIST_BG__ = 6
 
 if VIDEO == 1:
     cap = cv.VideoCapture("D:\\joci\\EGYETEM\\_PE_MIK\\3_felev\\Szakdoga\\02_data\\01_vid\\square.mp4")
@@ -51,14 +50,14 @@ TASKS:
 """
 
 # region ---- GLOBAL PARAMETERS ----
-omega_g = (0.5 * np.ones((__PIXELCOUNT__, 3, __DIST_N__))).astype('f')
+omega_g = (1. * np.ones((__PIXELCOUNT__, 3, __DIST_N__))).astype('f')
 
 mue_g = (1 * np.ones((__PIXELCOUNT__, 3, __DIST_N__))).astype(int)
 for n in range(__DIST_N__):
-    x = n * int(255/__DIST_N__)
+    x = n * int(255 / (__DIST_N__-1))
     mue_g[:, :, n] = mue_g[:, :, n] * x
 
-sigma_g = (150 * np.ones((__PIXELCOUNT__, 3, __DIST_N__))).astype(int)
+sigma_g = (10 * np.ones((__PIXELCOUNT__, 3, __DIST_N__))).astype(int)
 
 """distribution_g
     axis 0 :    0 - __PIXELCOUNT__  : pixel identifier
@@ -67,8 +66,17 @@ sigma_g = (150 * np.ones((__PIXELCOUNT__, 3, __DIST_N__))).astype(int)
     axis 3 :            0 - 3       : mue,sigma,omega parameters
 """
 distribution_g = np.stack((mue_g, sigma_g, omega_g), axis=3)
-alpha_g = .8
-ro_g = .6
+
+"""foreground_dist_g
+    axis 0 :    0 - __PIXELCOUNT__  : pixel identifier
+    axis 1 :            0 - 3       : R,G,B channels
+    axis 2 :            0 - 1       : distribution identifier
+    axis 3 :            0 - 3       : mue,sigma,omega parameters
+"""
+foreground_dist_g = np.zeros((__PIXELCOUNT__, 3, 1, 3))
+alpha_g = .5
+ro_g = .75
+ro_g_fg = .5
 
 
 # endregion
@@ -77,11 +85,11 @@ def captureImage(folderName, imageStringWithoutNumber, fileFormat, i):
     if True and isinstance(folderName, str) \
             and isinstance(imageStringWithoutNumber, str) \
             and isinstance(fileFormat, str):
-
-        path = str(folderName).replace('\\','/') + '/'
+        path = str(folderName).replace('\\', '/') + '/'
         genPath = str(path + imageStringWithoutNumber + "%04d" % i + fileFormat)
         image = cv.imread(genPath)
         return image
+
 
 def sigma_updater(ro_p, pixel_p, mue_p, sigma_p, M_p):
     """
@@ -93,16 +101,16 @@ def sigma_updater(ro_p, pixel_p, mue_p, sigma_p, M_p):
         @M_p
     """
     distance = mue_p.T - pixel_p.T
-    distance_sq = np.einsum('ijk,ijk->ijk', distance, distance)
-    sigma_p_sq = np.einsum('ijk,ijk->ijk', sigma_p, sigma_p)
+    distance_sq = np.einsum('ijk,ijk->ik', distance, distance)
+    sigma_p_sq = np.einsum('ijk,ijk->ik', sigma_p, sigma_p)
 
-    aa = (1 - ro_p) * sigma_p_sq * (sigma_p_sq > 1000)
-    a = sigma_p_sq * (aa == 0) + aa
+    a = (1 - ro_p) * sigma_p_sq
     b = ro_p * distance_sq.T
-    c = np.einsum('ijk,ki->ijk', a + b, M_p)
-    d = np.einsum('ijk,ki->ijk', sigma_p_sq, (1 - M_p))
+    c = np.einsum('ik,ki->ik', a + b, M_p)
+    d = np.einsum('ik,ki->ik', sigma_p_sq, (1 - M_p))
     sigma_sq = c + d
-    sigma_ret = np.sqrt(sigma_sq)
+    r = np.sqrt(sigma_sq)
+    sigma_ret = np.stack((r, r, r), axis=1)
     return sigma_ret
 
 
@@ -116,7 +124,7 @@ def mue_update(ro_p, pixel_p, mue_p, M_p):
     """
     a = (1 - ro_p) * mue_p
     aa = (ro_p * pixel_p)
-    b = (a.T+aa.T).T    # addition instead of multiplication: b = np.einsum('ijk,ij->ijk', a, aa)
+    b = (a.T + aa.T).T  # addition instead of multiplication: b = np.einsum('ijk,ij->ijk', a, aa)
     mue = np.einsum('ijk,ki->ijk', b, M_p)
     # d= (1-M_p)*mue_p
     c = np.einsum('ij,jki->jki', (1 - M_p), mue_p)  # M_p*(a.T + b.T) + d
@@ -142,25 +150,26 @@ def M(pixel_p, sigma_p, mue_p):
         @sigma_p: avarage of sigmas
         @mue_p
     """
-    #sigma_avg = np.mean(sigma_p, axis=1).T
+    # sigma_avg = np.mean(sigma_p, axis=1).T
 
     a_min_b = mue_p.T - pixel_p.T
     b = (np.einsum('ijk,ijk->ik', a_min_b, a_min_b))
-    a = b - (2.5*np.einsum('ik,ik->ik', sigma_p.T, sigma_p.T))
+    a = b - (2.5 * np.einsum('ik,ik->ik', sigma_p.T, sigma_p.T))
 
     a[a > 0] = 0
     a[a < 0] = 1
     return a.astype(bool)
 
 
-imageId = 270
+imageId = 625
+previous_background = np.ones((1, __PIXELCOUNT__))
 while (CFG_RUN):
     if VIDEO == 0:
-        frame = captureImage("D:\joci\projects\Szakdoga_PE\Szakdoga\Dataset\Yaser\GroundtruthSeq\RawImages",
-                         "seq00.avi",
-                         ".bmp",
-                         imageId)
-        imageId = imageId+1
+        frame = captureImage("D:\joci\projects\Szakdoga_PE\Szakdoga\Dataset\WallFlower\MovedObject",
+                             "b0",
+                             ".bmp",
+                             imageId)
+        imageId = imageId + 1
         ret = True
     else:
         ret, frame = cap.read()
@@ -196,15 +205,17 @@ while (CFG_RUN):
         result = []
         long_frame = np.reshape(frame_r, (__PIXELCOUNT__, 3))
         sigma_avg = distribution_g[:, :, :, __SIGMA__].sum(axis=1) / 3
-        result = M(long_frame, sigma_avg,distribution_g[:, :, :, __MUE__])
+        result = M(long_frame, sigma_avg, distribution_g[:, :, :, __MUE__])
         distribution_g[:, 0, :, __OMEGA__] = omega_update(distribution_g[:, 0, :, __OMEGA__], alpha_g, result)
         distribution_g[:, :, :, __MUE__] = mue_update(ro_g, long_frame, distribution_g[:, :, :, __MUE__], result)
         distribution_g[:, :, :, __SIGMA__] = sigma_updater(ro_g, long_frame, distribution_g[:, :, :, __MUE__],
                                                            distribution_g[:, :, :, __SIGMA__], result)
 
         omega_rec = 1 / distribution_g[:, 0, :, __OMEGA__]
-        B_all = np.einsum('ij,ij->ij', omega_rec, sigma_avg) # stores the ordering value for every pixel and every distribution
-        B_indx = np.argpartition(B_all,__DIST_BG__)[:,-__DIST_BG__:] # Returns the top 4 distributions index
+        B_all = np.einsum('ij,ij->ij', omega_rec,
+                          sigma_avg)  # stores the ordering value for every pixel and every distribution
+        B_indx = np.argpartition(B_all, (__DIST_BG__))[:, -__DIST_BG__:]  # Returns the top __DIST_BG__ distributions index
+        B_indx_min = np.argpartition(B_all, 1)[:, 0]  # Returns the lowest 1 distribution index
         # B_ext = [sigma_avg, B_all]
         # B_extArr = np.asarray(B_ext)
         # B_extArr = np.moveaxis(B_extArr, 0, -1)
@@ -219,24 +230,59 @@ while (CFG_RUN):
         for row in sigma_avg:
             a = row[B_indx[row_n]]
             sigma_top[row_n] = a
-            row_n = row_n+1
+            row_n = row_n + 1
 
         mue_top = np.zeros((__PIXELCOUNT__, 3, __DIST_BG__))
         row_n = 0
         for row in distribution_g:
-            b = row[:,B_indx[row_n],__MUE__]
+            b = row[:, B_indx[row_n], __MUE__]
             mue_top[row_n] = b
             row_n = row_n + 1
         # check if pixel is part of B:
         background = M(long_frame, sigma_top, mue_top)
 
-        background = np.reshape(background, (__DIST_BG__, 400, 600))
+        # region foreground model
+        background = np.sum(background, axis=0)
+        background[background > 0] = 1
+        background = background[np.newaxis, ...]
+        new_foreground = (previous_background == 1) * (background == 0)
+        previous_background = background
+        # mue
+        foreground_dist_g[..., 0, __MUE__] = (long_frame.T * new_foreground).T
+        # sigma
+        foreground_dist_g[..., 0, __SIGMA__] = (20 * np.ones((__PIXELCOUNT__, 3)).T * new_foreground).T
+
+        # update parameters
+        foreground_dist_g[..., __MUE__] = mue_update(ro_g_fg, long_frame, foreground_dist_g[..., __MUE__],
+                                                     np.logical_not(background))
+        foreground_dist_g[..., __SIGMA__] = sigma_updater(ro_g_fg, long_frame, foreground_dist_g[..., __MUE__],
+                                                          foreground_dist_g[..., __SIGMA__], np.logical_not(background))
+
+        # turn to background only when sigma is low
+        low_sigmas = (foreground_dist_g[...].T * (foreground_dist_g[..., __SIGMA__] < 5).T).T
+
+        foreground_dist_g = (foreground_dist_g.T * (foreground_dist_g[..., __SIGMA__] >= 5).T).T
+
+        for row in range(__PIXELCOUNT__):
+            if low_sigmas[row, :, 0, __MUE__].any() > 0:
+                distribution_g[row, :, B_indx_min[row], __MUE__] = low_sigmas[row, :, 0, __MUE__]
+                distribution_g[row, :, B_indx_min[row], __SIGMA__] = low_sigmas[row, :, 0, __SIGMA__]
+                distribution_g[row, 0, B_indx_min[row], __OMEGA__] = 1.
+
+        print(np.max(foreground_dist_g[:, 0, 0, __OMEGA__]))
+        # plot for test
+        fg_image = np.uint8(np.reshape(foreground_dist_g[:, :, 0, __OMEGA__]*255, (3, __HEIGHT__, __WIDTH__)))
+        fg_image = np.reshape(fg_image, (__HEIGHT__, __WIDTH__, 3))
+        cv.imshow("foreground", fg_image)
+        # endregion foreground model
+
+        background = np.reshape(background, (__HEIGHT__, __WIDTH__))
 
         rr = background * 1.0
-        rr = np.sum(rr,axis=0) # detect if any distribution is 1
-        #rr = np.einsum('ijk->jki', rr)
-        mueimg = mue_top[:,:,0]
-        mueimg_reshape = np.uint8(np.reshape(mueimg, (400, 600, 3)))
+        # rr = np.sum(rr,axis=0) # detect if any distribution is 1
+        # rr = np.einsum('ijk->jki', rr)
+        mueimg = mue_top[:, :, 0]
+        mueimg_reshape = np.uint8(np.reshape(mueimg, (__HEIGHT__, __WIDTH__, 3)))
 
         rrr = np.uint8(rr * 255)
 
@@ -260,10 +306,10 @@ while (CFG_RUN):
 
 
 # region ---- TEST ----
-i=0
-while (CFG_TEST and i<5):
+i = 0
+while (CFG_TEST and i < 5):
 
-    #TODO:
+    # TODO:
     #    - import video frames
     #    - flatten them
     #    - resize
@@ -276,22 +322,20 @@ while (CFG_TEST and i<5):
     if ret == False:
         print("Empty frame during test")
 
-
     start = 0
     stop = 0
     result = []
-    pixel_count = int((np.shape(frame)[0]*np.shape(frame)[1]))
+    pixel_count = int((np.shape(frame)[0] * np.shape(frame)[1]))
     long_frame = np.reshape(frame, (pixel_count, 3))
-    meas_n = 60 #number of meas
+    meas_n = 60  # number of meas
     print("started")
 
     mog = cv.createBackgroundSubtractorMOG2()
-    for meas_i in range(1,meas_n,1):
-
+    for meas_i in range(1, meas_n, 1):
         print("Loop:    ", meas_i)
-        pixels = int(((pixel_count/2)/meas_n) * meas_i)
+        pixels = int(((pixel_count / 2) / meas_n) * meas_i)
         test_frame = long_frame[:pixels]
-        #dist = distribution_g[:pixels,:,:,:]
+        # dist = distribution_g[:pixels,:,:,:]
 
         """
         #########################################
@@ -318,17 +362,17 @@ while (CFG_TEST and i<5):
         t4 = stop - start
         """
         start = time.time()
-        mask= mog.apply(test_frame)
+        mask = mog.apply(test_frame)
         stop = time.time()
         t1 = stop - start
 
         with open(log_file_path, 'a') as f:
-            print("{};{};".format(t1,pixels),file=f)
+            print("{};{};".format(t1, pixels), file=f)
     print("Finished")
     with open(log_file_path, 'a') as f:
         print("0;0;", file=f)
     print(i)
-    i = i+1
+    i = i + 1
 """
     sigma_avg = distribution_g[:, :, :, __SIGMA__].sum(axis=1) / 3
     omega_rec = 1 / distribution_g[:, 0, :, __OMEGA__]
@@ -360,5 +404,6 @@ while (CFG_TEST and i<5):
 """
 
 # endregion
-cap.release()
+if VIDEO == 1:
+    cap.release()
 cv.destroyAllWindows()
