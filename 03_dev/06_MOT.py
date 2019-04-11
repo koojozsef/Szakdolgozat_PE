@@ -2,10 +2,11 @@ from __future__ import print_function
 import sys
 import cv2
 from random import randint
+import numpy as np
 
 
 trackerTypes = ['BOOSTING', 'MIL', 'KCF','TLD', 'MEDIANFLOW', 'GOTURN', 'MOSSE', 'CSRT']
-trackerType = trackerTypes[3]
+trackerType = trackerTypes[4]
 
 def createTrackerByName(trackerType):
     # Create a tracker based on tracker name
@@ -80,28 +81,54 @@ def main():
     for bbox in bboxes:
         multiTracker.add(createTrackerByName(trackerType), frame, bbox)
 
+    kalman = cv2.KalmanFilter(2, 1, 0)
+
+    kalman.transitionMatrix = np.array([[1., 1.], [0., 1.]])
+    kalman.measurementMatrix = 1. * np.ones((1, 2))
+    kalman.processNoiseCov = 1e-5 * np.eye(2)
+    kalman.measurementNoiseCov = 1e-1 * np.ones((1, 1))
+    kalman.errorCovPost = 1. * np.ones((2, 2))
+    kalman.statePost = 0.1 * np.random.randn(2, 1)
+
     # Process video and track objects
+    KEY_PRESSED = 1
     while cap.isOpened():
-        success, frame = cap.read()
-        if not success:
-            break
-        frame = cv2.resize(frame, (1280, 720))
+        if KEY_PRESSED == 0:
+            k = cv2.waitKey() & 0xff
+            KEY_PRESSED = 1
+            print(f"key pressed: {k}")
+        else:
+            KEY_PRESSED = 0
+            success, frame = cap.read()
+            if not success:
+                break
+            frame = cv2.resize(frame, (1280, 720))
 
-        # get updated location of objects in subsequent frames
-        success, boxes = multiTracker.update(frame)
+            # get updated location of objects in subsequent frames
+            success, boxes = multiTracker.update(frame)
 
-        # draw tracked objects
-        for i, newbox in enumerate(boxes):
-            p1 = (int(newbox[0]), int(newbox[1]))
-            p2 = (int(newbox[0] + newbox[2]), int(newbox[1] + newbox[3]))
-            cv2.rectangle(frame, p1, p2, colors[i], 2, 1)
+            # draw tracked objects
+            for i, newbox in enumerate(boxes):
+                p1 = (int(newbox[0]), int(newbox[1]))
+                p2 = (int(newbox[0] + newbox[2]), int(newbox[1] + newbox[3]))
+                xy = (int(p1[0] + (p2[0] - p1[0]) / 2), int(p1[1] + (p2[1] - p1[1]) / 2))
+                pred_xy = kalman.predict()
 
-        # show frame
-        cv2.imshow('MultiTracker', frame)
+                meas = kalman.measurementNoiseCov * np.random.randn(1, 1)
+                meas = np.dot(kalman.measurementMatrix, xy) + meas
+                kalman.correct(meas)
 
-        # quit on ESC button
-        if cv2.waitKey(1) & 0xFF == 27:  # Esc pressed
-            break
+
+                cv2.circle(frame, xy, 2, colors[i], 2, 1)
+                cv2.circle(frame, (pred_xy[0],pred_xy[1]), 5, colors[i], 2, 1)
+                cv2.rectangle(frame, p1, p2, colors[i], 2, 1)
+
+            # show frame
+            cv2.imshow('MultiTracker', frame)
+
+            # quit on ESC button
+            if k == 27:  # Esc pressed
+                break
 
 if __name__ == "__main__":
     main()
