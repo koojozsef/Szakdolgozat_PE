@@ -76,8 +76,8 @@ def main():
             draw_cross(np.int32(measurement_pt), (0, 0, 255), 3)
             draw_cross(np.int32(predict_pt), (0, 255, 0), 3)
 
-            cv.line(img, state_pt, measurement_pt, (0, 0, 255), 3, cv.LINE_AA, 0)
-            cv.line(img, state_pt, predict_pt, (0, 255, 255), 3, cv.LINE_AA, 0)
+            #cv.line(img, state_pt, measurement_pt, (0, 0, 255), 3, cv.LINE_AA, 0)
+            #cv.line(img, state_pt, predict_pt, (0, 255, 255), 3, cv.LINE_AA, 0)
 
             kalman.correct(measurement)
 
@@ -86,8 +86,8 @@ def main():
 
             cv.imshow("Kalman", img)
 
-            code = cv.waitKey(100)
-            if code != -1:
+            code = cv.waitKey()
+            if code != -1 and code != 32:
                 break
 
         if code in [27, ord('q'), ord('Q')]:

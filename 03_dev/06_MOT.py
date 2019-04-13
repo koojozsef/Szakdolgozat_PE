@@ -81,14 +81,25 @@ def main():
     for bbox in bboxes:
         multiTracker.add(createTrackerByName(trackerType), frame, bbox)
 
-    kalman = cv2.KalmanFilter(2, 1, 0)
+    kalman_x = cv2.KalmanFilter(2, 1)
 
-    kalman.transitionMatrix = np.array([[1., 1.], [0., 1.]])
-    kalman.measurementMatrix = 1. * np.ones((1, 2))
-    kalman.processNoiseCov = 1e-5 * np.eye(2)
-    kalman.measurementNoiseCov = 1e-1 * np.ones((1, 1))
-    kalman.errorCovPost = 1. * np.ones((2, 2))
-    kalman.statePost = 0.1 * np.random.randn(2, 1)
+    kalman_x.transitionMatrix = np.array([[1., 1.], [0., 1.]])
+    kalman_x.measurementMatrix = 1. * np.ones((1, 2))
+    kalman_x.processNoiseCov = 1e-5 * np.eye(2)
+    kalman_x.measurementNoiseCov = 1e-1 * np.ones((1, 1))
+    kalman_x.errorCovPost = 1. * np.ones((2, 2))
+    kalman_x.statePost = 300. * np.ones((2, 1))
+    state_x = 1. * np.ones((2, 1))
+
+    kalman_y = cv2.KalmanFilter(2, 1)
+
+    kalman_y.transitionMatrix = np.array([[1., 1.], [0., 1.]])
+    kalman_y.measurementMatrix = 1. * np.ones((1, 2))
+    kalman_y.processNoiseCov = 1e-5 * np.eye(2)
+    kalman_y.measurementNoiseCov = 1e-1 * np.ones((1, 1))
+    kalman_y.errorCovPost = 1. * np.ones((2, 2))
+    kalman_y.statePost = 400. * np.ones((2, 1))
+    state_y = 1. * np.ones((2, 1))
 
     # Process video and track objects
     KEY_PRESSED = 1
@@ -111,16 +122,19 @@ def main():
             for i, newbox in enumerate(boxes):
                 p1 = (int(newbox[0]), int(newbox[1]))
                 p2 = (int(newbox[0] + newbox[2]), int(newbox[1] + newbox[3]))
-                xy = (int(p1[0] + (p2[0] - p1[0]) / 2), int(p1[1] + (p2[1] - p1[1]) / 2))
-                pred_xy = kalman.predict()
+                state_x[0] = p1[0] + (p2[0] - p1[0]) / 2
+                state_y[0] = p1[1] + (p2[1] - p1[1]) / 2
 
-                meas = kalman.measurementNoiseCov * np.random.randn(1, 1)
-                meas = np.dot(kalman.measurementMatrix, xy) + meas
-                kalman.correct(meas)
+                cv2.circle(frame, (state_x[0], state_y[0]), 2, colors[i], 2, 1)
+
+                pred_x = kalman_x.predict()
+                kalman_x.correct(np.dot(kalman_x.measurementMatrix, state_x))
+
+                pred_y = kalman_y.predict()
+                kalman_y.correct(np.dot(kalman_y.measurementMatrix, state_y))
 
 
-                cv2.circle(frame, xy, 2, colors[i], 2, 1)
-                cv2.circle(frame, (pred_xy[0],pred_xy[1]), 5, colors[i], 2, 1)
+                cv2.circle(frame, (pred_x[0], pred_y[0]), 5, colors[i], 2, 1)
                 cv2.rectangle(frame, p1, p2, colors[i], 2, 1)
 
             # show frame
