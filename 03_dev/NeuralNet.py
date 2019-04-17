@@ -1,12 +1,14 @@
 from random import random
 import cv2 as cv
+from math import sqrt
 from keras.models import Sequential
-from keras.layers import Input, Dense, regularizers
+from keras.layers import Input, Dense, regularizers, Flatten, Reshape, Conv3D
 from keras.models import Model
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-os.environ["TF_CPP_MIN_LOG_LEVEL"]="3"
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 
 def get_test_data_source():
@@ -25,7 +27,7 @@ def get_test_data_source():
     return np.asarray(ret_data)
 
 
-def get_random_image_sequence(src_array, number_of_image):
+def get_random_image_sequence(src_array, number_of_image, height, width):
     sequence = int(random() * src_array.shape[0])
     max_image = len(os.listdir(src_array[sequence, 0]))
     image_start = int(random() * max((max_image - number_of_image - 1), 0))
@@ -35,108 +37,85 @@ def get_random_image_sequence(src_array, number_of_image):
         path_gt = str(src_array[sequence, 1]) + "%04d" % (i + image_start) + ".png"
         image = cv.imread(path, 0)
         image_gt = cv.imread(path_gt, 0)
-        image = cv.resize(image, (240, 160))
-        image_gt = cv.resize(image_gt, (240, 160))
+        image = cv.resize(image, (width, height))
+        image_gt = cv.resize(image_gt, (width, height))
         ret.append([image, image_gt])
 
     return ret
 
 
-def get_data(seq_count, im_count):
+def get_data(seq_count, im_count, height, width):
     images_source = get_test_data_source()
     sequences = []
     for i in range(seq_count):
-        image_array = get_random_image_sequence(images_source, im_count)
+        image_array = get_random_image_sequence(images_source, im_count, height, width)
         sequences.append(image_array)
     return np.asarray(sequences).astype(np.uint8)
 
 
 def main():
-    sequence_count = 10
+    sequence_count = 30
     image_count = 10
-    input_count = 4  # 4 input image: MOG, Grey, Optical flow, prev result
-    height = 160
-    width = 240
-    rgb = 3
-    training_data = np.zeros((sequence_count, image_count, input_count, height, width)).astype(np.uint8)
-    training_data[:, :, :2, :, :] = get_data(sequence_count, image_count)
+    input_count = 4  # 4 input image; 0: Grey, 1: GT, 2: MOG, 3: Optical flow
+    height = 80
+    width = 120
 
+    training_data = np.zeros((sequence_count, image_count, input_count, height, width)).astype(np.uint8)
+    training_data[:, :, :2, :, :] = get_data(sequence_count, image_count, height, width)
 
     for seq in training_data:
         fn_mog = cv.bgsegm.createBackgroundSubtractorMOG()
-        fn_mog2 = cv.createBackgroundSubtractorMOG2(detectShadows=0)
-        fn_knn = cv.createBackgroundSubtractorKNN(detectShadows=0)
+        i = 0
         for im in seq:
-            mog2_res = fn_mog2.apply(im[0])
-            knn_res = fn_knn.apply(im[0])
-            mog_res = fn_mog.apply(im[0])
-            cv.imshow("mog", mog_res)
-            cv.imshow("mog2", mog2_res)
-            cv.imshow("knn", knn_res)
-            cv.imshow("image", im[0])
-            cv.imshow("gt", im[1])
-            cv.waitKey()
+            im[2] = fn_mog.apply(im[0])
+            if i <= 0:
+                flow = cv.calcOpticalFlowFarneback(im[0], im[0], None, 0.5, 3, 15, 3, 5, 1.2, 0)
+            else:
+                flow = cv.calcOpticalFlowFarneback(seq[(i - 1), 0], im[0], None, 0.5, 3, 15, 3, 5, 1.2, 0)
+            a = np.einsum("ij,ij->ij", flow[:, :, 0], flow[:, :, 0])
+            b = np.einsum("ij,ij->ij", flow[:, :, 1], flow[:, :, 1])
+            im[3] = (cv.normalize(np.sqrt(a + b), None, 0, 255, cv.NORM_MINMAX)).astype(np.uint8)
+            i = i + 1
 
-    network_input = np.zeros((sequence_count, image_count, 4, 160, 240, 3))
-"""
+    network_input = np.reshape(np.array(training_data[:, :, (0, 2, 3), :, :]),
+                               (sequence_count * image_count, 3, height, width))
+    network_label = np.reshape(np.array(training_data[:, :, 1, :, :]),
+                               (sequence_count * image_count, height, width))
+
+
     #------------------
     #      keras
     #------------------
 
-    input_img = Input(shape=(imageshape,))
-    # add a Dense layer with a L1 activity regularizer
-    encoded = Dense(encoding_dim, activation='relu',
+    input_img = Input(shape=(3, height, width))
+
+    encoded = Dense(100, activation='relu',
                     activity_regularizer=regularizers.l1(10e-5))(input_img)
-    decoded = Dense(imageshape, activation='sigmoid')(encoded)
+
+    flatten = Flatten()(encoded)
+
+    decoded = Dense(height*width, activation='sigmoid')(flatten)
+
+    reshape = Reshape((height, width))(decoded)
 
     # this model maps an input to its reconstruction
-    autoencoder = Model(input_img, decoded)
-
-    encoder = Model(input_img, encoded)
-
-    # create a placeholder for an encoded (32-dimensional) input
-    encoded_input = Input(shape=(encoding_dim,))
-    # retrieve the last layer of the autoencoder model
-    decoder_layer = autoencoder.layers[-1]
-    # create the decoder model
-    decoder = Model(encoded_input, decoder_layer(encoded_input))
+    autoencoder = Model(input_img, reshape)
 
     #build
     autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
 
-    x_train = images[:1000].astype('float32') / 255.
-    x_test = images[9000:].astype('float32') / 255.
+    x_train = network_input[:200].astype('float32') / 255.
+    x_label = network_label[:200].astype('float32') / 255.
+    x_test = network_input[200:].astype('float32') / 255.
+    x_test_label = network_label[200:].astype('float32') / 255.
 
-    autoencoder.fit(x_train, x_train,
+    autoencoder.fit(x_train, x_label,
                     epochs=1,
-                    batch_size=200,
+                    batch_size=1,
                     shuffle=True,
-                    validation_data=(x_test, x_test))
+                    validation_data=(x_test, x_test_label))
 
-    encoded_imgs = encoder.predict(x_test)
-    decoded_imgs = decoder.predict(encoded_imgs)
 
-    # use Matplotlib (don't ask)
-    import matplotlib.pyplot as plt
-
-    n = 10  # how many digits we will display
-    plt.figure(figsize=(20, 4))
-    for i in range(n):
-        # display original
-        ax = plt.subplot(2, n, i + 1)
-        plt.imshow(np.transpose(x_test[i].reshape(3,32,32),(1,2,0)))
-        #plt.gray()
-        ax.get_xaxis().set_visible(False)
-        ax.get_yaxis().set_visible(False)
-
-        # display reconstruction
-        ax = plt.subplot(2, n, i + 1 + n)
-        plt.imshow(np.transpose(decoded_imgs[i].reshape(3,32,32),(1,2,0)))
-        #plt.gray()
-        ax.get_xaxis().set_visible(False)
-        ax.get_yaxis().set_visible(False)
-    plt.show()
-"""
 
 if __name__ == '__main__':
     main()
