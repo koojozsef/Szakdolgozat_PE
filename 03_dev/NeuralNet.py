@@ -33,8 +33,8 @@ def get_random_image_sequence(src_array, number_of_image):
     for i in range(number_of_image):
         path = str(src_array[sequence, 0]) + "%04d" % (i + image_start) + ".png"
         path_gt = str(src_array[sequence, 1]) + "%04d" % (i + image_start) + ".png"
-        image = cv.imread(path)
-        image_gt = cv.imread(path_gt)
+        image = cv.imread(path, 0)
+        image_gt = cv.imread(path_gt, 0)
         image = cv.resize(image, (240, 160))
         image_gt = cv.resize(image_gt, (240, 160))
         ret.append([image, image_gt])
@@ -48,14 +48,37 @@ def get_data(seq_count, im_count):
     for i in range(seq_count):
         image_array = get_random_image_sequence(images_source, im_count)
         sequences.append(image_array)
-    return sequences
+    return np.asarray(sequences).astype(np.uint8)
 
 
 def main():
-    sequence_count = 40
-    image_count = 80
-    training_data = get_data(sequence_count, image_count)
+    sequence_count = 10
+    image_count = 10
+    input_count = 4  # 4 input image: MOG, Grey, Optical flow, prev result
+    height = 160
+    width = 240
+    rgb = 3
+    training_data = np.zeros((sequence_count, image_count, input_count, height, width)).astype(np.uint8)
+    training_data[:, :, :2, :, :] = get_data(sequence_count, image_count)
 
+
+    for seq in training_data:
+        fn_mog = cv.bgsegm.createBackgroundSubtractorMOG()
+        fn_mog2 = cv.createBackgroundSubtractorMOG2(detectShadows=0)
+        fn_knn = cv.createBackgroundSubtractorKNN(detectShadows=0)
+        for im in seq:
+            mog2_res = fn_mog2.apply(im[0])
+            knn_res = fn_knn.apply(im[0])
+            mog_res = fn_mog.apply(im[0])
+            cv.imshow("mog", mog_res)
+            cv.imshow("mog2", mog2_res)
+            cv.imshow("knn", knn_res)
+            cv.imshow("image", im[0])
+            cv.imshow("gt", im[1])
+            cv.waitKey()
+
+    network_input = np.zeros((sequence_count, image_count, 4, 160, 240, 3))
+"""
     #------------------
     #      keras
     #------------------
@@ -113,7 +136,7 @@ def main():
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
     plt.show()
-
+"""
 
 if __name__ == '__main__':
     main()
