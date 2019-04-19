@@ -54,7 +54,7 @@ def get_data(seq_count, im_count, height, width):
 
 
 def main():
-    sequence_count = 10
+    sequence_count = 20
     image_count = 5
     input_count = 4  # 4 input image; 0: Grey, 1: GT, 2: MOG, 3: Optical flow
     height = 80
@@ -89,14 +89,14 @@ def main():
 
     input_img = Input(shape=(3, height, width))
 
-    encoded1 = Dense(20, activation='relu',
-                    activity_regularizer=regularizers.l1(10e-5))(input_img)
-    encoded2 = Dense(20, activation='relu',
-                    activity_regularizer=regularizers.l1(10e-5))(encoded1)
-    encoded3 = Dense(20, activation='relu',
-                    activity_regularizer=regularizers.l1(10e-5))(encoded2)
+    encoded1 = Dense(80, activation='relu',
+                    activity_regularizer=regularizers.l1(10e-3))(input_img)
+    encoded2 = Dense(80, activation='relu',
+                    activity_regularizer=regularizers.l1(10e-3))(encoded1)
+    encoded3 = Dense(80, activation='relu',
+                    activity_regularizer=regularizers.l1(10e-3))(encoded2)
 
-    flatten = Flatten()(encoded3 )
+    flatten = Flatten()(encoded3)
 
     decoded = Dense(height*width, activation='sigmoid')(flatten)
 
@@ -108,13 +108,13 @@ def main():
     #build
     autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
 
-    x_train = network_input[:40].astype('float32') / 255.
-    x_label = network_label[:40].astype('float32') / 255.
-    x_test = network_input[40:].astype('float32') / 255.
-    x_test_label = network_label[40:].astype('float32') / 255.
+    x_train = network_input[:70].astype('float32') / 255.
+    x_label = network_label[:70].astype('float32') / 255.
+    x_test = network_input[70:].astype('float32') / 255.
+    x_test_label = network_label[70:].astype('float32') / 255.
 
     autoencoder.fit(x_train, x_label,
-                    epochs=2,
+                    epochs=15,
                     batch_size=2,
                     shuffle=True,
                     validation_data=(x_test, x_test_label))
@@ -139,9 +139,10 @@ def main():
             imi[3] = (cv.normalize(np.sqrt(a + b), None, 0, 255, cv.NORM_MINMAX)).astype(np.uint8)
             i = i + 1
             pred_im = np.array([imi[(0, 2, 3), :, :]])
-            result_im = autoencoder.predict(pred_im).astype(np.uint8)
-            cv.imshow("NN 0", result_im[0])
+            result_im = autoencoder.predict(pred_im)
             print(np.max(result_im))
+            print(np.sum(result_im))
+            cv.imshow("NN 0", (result_im[0]*255).astype(np.uint8))
             cv.imshow("flow", imi[3])
             cv.imshow("mog", mog_res)
             cv.imshow("mog2", mog2_res)
