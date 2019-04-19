@@ -54,8 +54,8 @@ def get_data(seq_count, im_count, height, width):
 
 
 def main():
-    sequence_count = 30
-    image_count = 10
+    sequence_count = 10
+    image_count = 5
     input_count = 4  # 4 input image; 0: Grey, 1: GT, 2: MOG, 3: Optical flow
     height = 80
     width = 120
@@ -89,10 +89,14 @@ def main():
 
     input_img = Input(shape=(3, height, width))
 
-    encoded = Dense(100, activation='relu',
+    encoded1 = Dense(20, activation='relu',
                     activity_regularizer=regularizers.l1(10e-5))(input_img)
+    encoded2 = Dense(20, activation='relu',
+                    activity_regularizer=regularizers.l1(10e-5))(encoded1)
+    encoded3 = Dense(20, activation='relu',
+                    activity_regularizer=regularizers.l1(10e-5))(encoded2)
 
-    flatten = Flatten()(encoded)
+    flatten = Flatten()(encoded3 )
 
     decoded = Dense(height*width, activation='sigmoid')(flatten)
 
@@ -104,17 +108,47 @@ def main():
     #build
     autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
 
-    x_train = network_input[:200].astype('float32') / 255.
-    x_label = network_label[:200].astype('float32') / 255.
-    x_test = network_input[200:].astype('float32') / 255.
-    x_test_label = network_label[200:].astype('float32') / 255.
+    x_train = network_input[:40].astype('float32') / 255.
+    x_label = network_label[:40].astype('float32') / 255.
+    x_test = network_input[40:].astype('float32') / 255.
+    x_test_label = network_label[40:].astype('float32') / 255.
 
     autoencoder.fit(x_train, x_label,
-                    epochs=1,
-                    batch_size=1,
+                    epochs=2,
+                    batch_size=2,
                     shuffle=True,
                     validation_data=(x_test, x_test_label))
 
+    check_result_data = np.zeros((2, 10, input_count, height, width)).astype(np.uint8)
+    check_result_data[:, :, :2, :, :] = get_data(2, 10, height, width)
+    for seqi in check_result_data:
+        fn_mog = cv.bgsegm.createBackgroundSubtractorMOG()
+        fn_mog2 = cv.createBackgroundSubtractorMOG2(detectShadows=0)
+        fn_knn = cv.createBackgroundSubtractorKNN(detectShadows=0)
+        i = 0
+        for imi in seqi:
+            mog2_res = fn_mog2.apply(imi[0])
+            knn_res = fn_knn.apply(imi[0])
+            mog_res = fn_mog.apply(imi[0])
+            if i <= 0:
+                flow = cv.calcOpticalFlowFarneback(imi[0], imi[0], None, 0.5, 3, 15, 3, 5, 1.2, 0)
+            else:
+                flow = cv.calcOpticalFlowFarneback(seqi[(i - 1), 0], imi[0], None, 0.5, 3, 15, 3, 5, 1.2, 0)
+            a = np.einsum("ij,ij->ij", flow[:, :, 0], flow[:, :, 0])
+            b = np.einsum("ij,ij->ij", flow[:, :, 1], flow[:, :, 1])
+            imi[3] = (cv.normalize(np.sqrt(a + b), None, 0, 255, cv.NORM_MINMAX)).astype(np.uint8)
+            i = i + 1
+            pred_im = np.array([imi[(0, 2, 3), :, :]])
+            result_im = autoencoder.predict(pred_im).astype(np.uint8)
+            cv.imshow("NN 0", result_im[0])
+            print(np.max(result_im))
+            cv.imshow("flow", imi[3])
+            cv.imshow("mog", mog_res)
+            cv.imshow("mog2", mog2_res)
+            cv.imshow("knn", knn_res)
+            cv.imshow("image", imi[0])
+            cv.imshow("gt", imi[1])
+            cv.waitKey()
 
 
 if __name__ == '__main__':
