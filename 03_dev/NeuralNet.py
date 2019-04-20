@@ -53,9 +53,9 @@ def get_data(seq_count, im_count, height, width):
     return np.asarray(sequences).astype(np.uint8)
 
 
-def get_kernel_data(sequence_count, image_count, kernelsize, height, width):
+def get_kernel_data(sequence_count, image_count, kernelsize, input_count, height, width):
     learn_phase = 10
-    images = np.zeros((sequence_count, image_count + learn_phase, 4, height, width)).astype(np.uint8)
+    images = np.zeros((sequence_count, image_count + learn_phase, input_count, height, width)).astype(np.uint8)
     images[:, :, :2, :, :] = get_data(sequence_count, image_count + learn_phase, height, width)
 
     out = []
@@ -63,13 +63,20 @@ def get_kernel_data(sequence_count, image_count, kernelsize, height, width):
 
     for seq in images:
         fn_mog = cv.bgsegm.createBackgroundSubtractorMOG()
+        fn_knn = cv.createBackgroundSubtractorKNN()
         i = 0
         for im in seq:
             im[2] = fn_mog.apply(im[0])
+            im[4] = fn_knn.apply(im[0])
             if i <= 0:
                 flow = cv.calcOpticalFlowFarneback(im[0], im[0], None, 0.5, 2, 5, 3, 5, 1.2, 0)
+                diff = im[0] - im[0]
+                im[5] = im[2]
             else:
                 flow = cv.calcOpticalFlowFarneback(seq[(i - 1), 0], im[0], None, 0.5, 2, 5, 3, 5, 1.2, 0)
+                diff = np.abs(im[0] - seq[(i - 1), 0])
+                im[5] = (seq[(i - 1), 2]/2 + im[2]/2).astype(np.uint8)
+            # im[4] = diff.astype(np.uint8)
             a = np.einsum("ij,ij->ij", flow[:, :, 0], flow[:, :, 0])
             b = np.einsum("ij,ij->ij", flow[:, :, 1], flow[:, :, 1])
             im[3] = (cv.normalize(np.sqrt(a + b), None, 0, 255, cv.NORM_MINMAX)).astype(np.uint8)
@@ -86,18 +93,17 @@ def get_kernel_data(sequence_count, image_count, kernelsize, height, width):
 def main():
     sequence_count = 20
     image_count = 5
-    input_count = 4  # 4 input image; 0: Grey, 1: GT, 2: MOG, 3: Optical flow
+    input_count = 6  # 4 input image; 0: Grey, 1: GT, 2: MOG, 3: Optical flow
     height = 160
     width = 240
-    kernelshape = 15  # 5x5 kernel size
+    kernelshape = 7  # 5x5 kernel size
 
-    teach_size = 10000
-    test_size = 2000
+    teach_size = 300000
+    test_size = 80000
 
+    training_data_kernels = get_kernel_data(sequence_count, image_count, kernelshape, input_count, height, width)
 
-    training_data_kernels = get_kernel_data(sequence_count, image_count, kernelshape, height, width)
-
-    network_input = training_data_kernels[:, (0, 2, 3), :, :]
+    network_input = training_data_kernels[:, (4, 2, 3), :, :]
     network_label = training_data_kernels[:, 1, int(kernelshape/2) + 1, int(kernelshape/2) + 1]
 
 
@@ -108,22 +114,22 @@ def main():
 
     input_img = Input(shape=(3, kernelshape, kernelshape))
 
-    encoded1 = Dense(25, activation='relu',
+    encoded1 = Dense(50, activation='relu',
                      activity_regularizer=regularizers.l2(10e-3))(input_img)
     encoded2 = Dense(20, activation='relu',
                      activity_regularizer=regularizers.l2(10e-3))(encoded1)
-    encoded3 = Dense(5, activation='relu',
+    encoded3 = Dense(15, activation='relu',
                      activity_regularizer=regularizers.l1(10e-3))(encoded2)
 
     flatten = Flatten()(encoded3)
 
-    decoded = Dense(1, activation='sigmoid')(flatten)
+    decoded = Dense(1, activation='relu')(flatten)
 
     # this model maps an input to its reconstruction
     autoencoder = Model(input_img, decoded)
 
     #build
-    autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
+    autoencoder.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['accuracy'])
 
     x_train = network_input[:teach_size].astype('float32') / 255.
     x_label = network_label[:teach_size].astype('float32') / 255.
@@ -131,7 +137,7 @@ def main():
     x_test_label = network_label[teach_size:teach_size + test_size].astype('float32') / 255.
 
     autoencoder.fit(x_train, x_label,
-                    epochs=3,
+                    epochs=5,
                     batch_size=500,
                     shuffle=True,
                     validation_data=(x_test, x_test_label))
@@ -146,11 +152,16 @@ def main():
         fn_mog = cv.bgsegm.createBackgroundSubtractorMOG()
         i = 0
         for imi in seqi:
-            mog_res = fn_mog.apply(imi[0])
+            imi[2] = fn_mog.apply(imi[0])
             if i <= 0:
                 flow = cv.calcOpticalFlowFarneback(imi[0], imi[0], None, 0.5, 2, 5, 3, 5, 1.2, 0)
+                diff = imi[0] - imi[0]
+                imi[5] = imi[2]
             else:
                 flow = cv.calcOpticalFlowFarneback(seqi[(i - 1), 0], imi[0], None, 0.5, 2, 5, 3, 5, 1.2, 0)
+                diff = np.abs(imi[0] - seqi[(i - 1), 0])
+                imi[5] = (seqi[(i - 1), 2] / 2 + imi[2] / 2).astype(np.uint8)
+            # im[4] = diff.astype(np.uint8)
             a = np.einsum("ij,ij->ij", flow[:, :, 0], flow[:, :, 0])
             b = np.einsum("ij,ij->ij", flow[:, :, 1], flow[:, :, 1])
             imi[3] = (cv.normalize(np.sqrt(a + b), None, 0, 255, cv.NORM_MINMAX)).astype(np.uint8)
@@ -160,7 +171,7 @@ def main():
             kernel_i = int(kernelshape / 2)
             for k in range(kernel_i, height - kernelshape):
                 for j in range(kernel_i, width - kernelshape):
-                    pred_im = np.array([imi[(0, 2, 3), (k - kernel_i):(k + kernel_i + 1), (j - kernel_i):(j + kernel_i + 1)]])
+                    pred_im = np.array([imi[(4, 2, 3), (k - kernel_i):(k + kernel_i + 1), (j - kernel_i):(j + kernel_i + 1)]])
                     result_im[k, j] = autoencoder.predict(pred_im)
 
             print(np.max(result_im))
@@ -168,7 +179,7 @@ def main():
             res_im = cv.normalize(result_im, None, 0, 255, cv.NORM_MINMAX)
             cv.imshow("NN 0", res_im.astype(np.uint8))
             cv.imshow("flow", imi[3])
-            cv.imshow("mog", mog_res)
+            cv.imshow("mog", imi[5])
             cv.imshow("image", imi[0])
             cv.imshow("gt", imi[1])
             cv.waitKey()
