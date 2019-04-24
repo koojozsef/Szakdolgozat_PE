@@ -55,11 +55,11 @@ def get_data(seq_count, im_count, height, width):
 
 
 def main():
-    sequence_count = 20
-    image_count = 5
+    sequence_count = 40
+    image_count = 13
     input_count = 4  # 4 input image; 0: Grey, 1: GT, 2: MOG, 3: Optical flow
-    height = 128
-    width = 128
+    height = 224
+    width = 224
 
     training_data = np.zeros((sequence_count, image_count, input_count, height, width)).astype(np.uint8)
     training_data[:, :, :2, :, :] = get_data(sequence_count, image_count, height, width)
@@ -68,26 +68,30 @@ def main():
         fn_mog = cv.bgsegm.createBackgroundSubtractorMOG()
         i = 0
         for im in seq:
-            im[2] = fn_mog.apply(im[0])
-            if i <= 0:
-                flow = cv.calcOpticalFlowFarneback(im[0], im[0], None, 0.5, 3, 15, 3, 5, 1.2, 0)
+            # im[2] = fn_mog.apply(im[0])
+            if i < 2:
+                im[2] = im[0]
+                im[3] = im[0]
+                # flow = cv.calcOpticalFlowFarneback(im[0], im[0], None, 0.5, 3, 15, 3, 5, 1.2, 0)
             else:
-                flow = cv.calcOpticalFlowFarneback(seq[(i - 1), 0], im[0], None, 0.5, 3, 15, 3, 5, 1.2, 0)
-            a = np.einsum("ij,ij->ij", flow[:, :, 0], flow[:, :, 0])
-            b = np.einsum("ij,ij->ij", flow[:, :, 1], flow[:, :, 1])
-            im[3] = (cv.normalize(np.sqrt(a + b), None, 0, 255, cv.NORM_MINMAX)).astype(np.uint8)
+                im[2] = seq[(i - 1), 0]
+                im[3] = seq[(i - 2), 0]
+                # flow = cv.calcOpticalFlowFarneback(seq[(i - 1), 0], im[0], None, 0.5, 3, 15, 3, 5, 1.2, 0)
+            # a = np.einsum("ij,ij->ij", flow[:, :, 0], flow[:, :, 0])
+            # b = np.einsum("ij,ij->ij", flow[:, :, 1], flow[:, :, 1])
+            # im[3] = (cv.normalize(np.sqrt(a + b), None, 0, 255, cv.NORM_MINMAX)).astype(np.uint8)
             i = i + 1
 
-    network_input = np.reshape(np.array(training_data[:, :, (0, 2, 3), :, :]),
-                               (sequence_count * image_count, 3, height, width))
+    network_input = np.reshape(np.array(training_data[:, 3:, (0, 2, 3), :, :]),
+                               (sequence_count * (image_count - 3), 3, height, width))
     network_input = np.einsum("iklm->ilmk", network_input)
-    network_label = np.reshape(np.array(training_data[:, :, 1, :, :]),
-                               (sequence_count * image_count, height, width))
+    network_label = np.reshape(np.array(training_data[:, 3:, 1, :, :]),
+                               (sequence_count * (image_count - 3), height, width))
 
 
-    #------------------
+    # ------------------
     #      keras
-    #------------------
+    # ------------------
 
     IMG_SHAPE = (height, width, 3)
     # Create the base model from the pre-trained model MobileNet V2
@@ -102,10 +106,10 @@ def main():
                               keras.layers.Dense((height * width), activation='sigmoid'),
                               keras.layers.Reshape(IMG_SHAPE[:2])])
 
-    x_train = network_input[:70].astype('float32') / 255.
-    x_label = network_label[:70].astype('float32') / 255.
-    x_test = network_input[70:].astype('float32') / 255.
-    x_test_label = network_label[70:].astype('float32') / 255.
+    x_train = network_input[:300].astype('float32') / 255.
+    x_label = network_label[:300].astype('float32') / 255.
+    x_test = network_input[300:].astype('float32') / 255.
+    x_test_label = network_label[300:].astype('float32') / 255.
 
     model.compile(optimizer=keras.optimizers.RMSprop(lr=0.0001),
                   loss='binary_crossentropy',
@@ -140,13 +144,12 @@ def main():
     plt.ylim([0, max(plt.ylim())])
     plt.title('Training and Validation Loss')
     plt.show()
-    #------------------
+    # ------------------
     #      keras
-    #------------------
+    # ------------------
 
-
-    check_result_data = np.zeros((2, 10, input_count, height, width)).astype(np.uint8)
-    check_result_data[:, :, :2, :, :] = get_data(2, 10, height, width)
+    check_result_data = np.zeros((10, 10, input_count, height, width)).astype(np.uint8)
+    check_result_data[:, :, :2, :, :] = get_data(10, 10, height, width)
 
     for seqi in check_result_data:
         fn_mog = cv.bgsegm.createBackgroundSubtractorMOG()
