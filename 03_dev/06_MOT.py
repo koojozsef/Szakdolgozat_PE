@@ -38,18 +38,19 @@ def createTrackerByName(trackerType):
 def main():
     #createTrackerByName(trackerTypes[0])
 
-    videoPath = "D:/joci/projects/Szakdoga_PE/Szakdoga/Dataset/Video/traffic.mp4"
+    videoPath = "D:\joci\projects\Szakdoga_PE\Szakdoga\Dataset\Video\intersection_traffic.mp4".replace("\\", "/")
 
     # Create a video capture object to read videos
     cap = cv2.VideoCapture(videoPath)
 
 
     # Read first frame
-    success, frame = cap.read()
-    # quit if unable to read the video file
-    if not success:
-        print('Failed to read video')
-        sys.exit(1)
+    for i in range(150):
+        success, frame = cap.read()
+        # quit if unable to read the video file
+        if not success:
+            print('Failed to read video')
+            sys.exit(1)
 
     frame = cv2.resize(frame, (1280, 720))
 
@@ -66,7 +67,7 @@ def main():
         # when fromCenter is set to false, you can draw box starting from top left corner
         bbox = cv2.selectROI('MultiTracker', frame)
         bboxes.append(bbox)
-        colors.append([0, 255, 0])
+        colors.append([255, 0, 0])
         print("Press q to quit selecting boxes and start tracking")
         print("Press any other key to select next object")
         k = cv2.waitKey(0) & 0xFF
@@ -87,8 +88,8 @@ def main():
                                           [0., 1., 1.],
                                           [0., 0., 1.]])
     kalman_x.measurementMatrix = np.array([[1., 0., 0.]])
-    kalman_x.processNoiseCov = 1e-2 * np.eye(3)
-    kalman_x.measurementNoiseCov = 1e-6 * np.ones((1, 1))
+    kalman_x.processNoiseCov = 1e-7 * np.eye(3)
+    kalman_x.measurementNoiseCov = 1e-7 * np.ones((1, 1))
     kalman_x.errorCovPost = 1. * np.ones((3, 3))
 
     kalman_y = cv2.KalmanFilter()
@@ -96,8 +97,8 @@ def main():
                                           [0., 1., 1.],
                                           [0., 0., 1.]])
     kalman_y.measurementMatrix = np.array([[1., 0., 0.]])
-    kalman_y.processNoiseCov = 1e-2 * np.eye(3)
-    kalman_y.measurementNoiseCov = 1e-6 * np.ones((1, 1))
+    kalman_y.processNoiseCov = 1e-7 * np.eye(3)
+    kalman_y.measurementNoiseCov = 1e-7 * np.ones((1, 1))
     kalman_y.errorCovPost = 1. * np.ones((3, 3))
 
     state_x = np.array([0, 0, 0])
@@ -107,11 +108,12 @@ def main():
     KEY_PRESSED = 1
     j = 0
     while cap.isOpened():
-        if KEY_PRESSED == 0:
+        if KEY_PRESSED == 0 and False:
             k = cv2.waitKey() & 0xff
             KEY_PRESSED = 1
             print(f"key pressed: {k}")
         else:
+            cv2.waitKey(30)
             KEY_PRESSED = 0
             success, frame = cap.read()
             if not success:
@@ -134,6 +136,9 @@ def main():
                     kalman_y.statePost = state_y.astype(float)
                     print(kalman_x.statePost)
                     j = 1
+                else:
+                    state_x[1:2] = kalman_x.statePre[1:2]
+                    state_y[1:2] = kalman_y.statePre[1:2]
 
                 if success:
                     cv2.circle(frame, (state_x[0], state_y[0]), 1, colors[i], 2, 1)
@@ -146,8 +151,8 @@ def main():
                 diff_x = abs(pred_x[0] - state_x[0])
                 diff_y = abs(pred_y[0] - state_y[0])
 
-                if diff_x > 10 or \
-                        diff_y > 10 \
+                if diff_x > 20 or \
+                        diff_y > 20 \
                         or not success:
                     kalman_x.correct(np.dot(kalman_x.measurementMatrix, pred_x))
                     kalman_y.correct(np.dot(kalman_y.measurementMatrix, pred_y))
