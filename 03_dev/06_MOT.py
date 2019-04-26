@@ -5,7 +5,7 @@ from random import randint
 import numpy as np
 
 
-trackerTypes = ['BOOSTING', 'MIL', 'KCF','TLD', 'MEDIANFLOW', 'GOTURN', 'MOSSE', 'CSRT']
+trackerTypes = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN', 'MOSSE', 'CSRT']
 trackerType = trackerTypes[4]
 
 def createTrackerByName(trackerType):
@@ -56,6 +56,7 @@ def main():
     # Select boxes
     bboxes = []
     colors = []
+    color_lost = [0, 0, 255]  # BGR
 
     # OpenCV's selectROI function doesn't work for selecting multiple objects in Python
     # So we will call this function in a loop till we are done selecting all objects
@@ -65,7 +66,7 @@ def main():
         # when fromCenter is set to false, you can draw box starting from top left corner
         bbox = cv2.selectROI('MultiTracker', frame)
         bboxes.append(bbox)
-        colors.append((randint(0, 255), randint(0, 255), randint(0, 255)))
+        colors.append([0, 255, 0])
         print("Press q to quit selecting boxes and start tracking")
         print("Press any other key to select next object")
         k = cv2.waitKey(0) & 0xFF
@@ -81,25 +82,26 @@ def main():
     for bbox in bboxes:
         multiTracker.add(createTrackerByName(trackerType), frame, bbox)
 
-    kalman_x = cv2.KalmanFilter(2, 1)
+    kalman_x = cv2.KalmanFilter()
+    kalman_x.transitionMatrix = np.array([[1., 1., 1.],
+                                          [0., 1., 1.],
+                                          [0., 0., 1.]])
+    kalman_x.measurementMatrix = np.array([[1., 0., 0.]])
+    kalman_x.processNoiseCov = 1e-2 * np.eye(3)
+    kalman_x.measurementNoiseCov = 1e-6 * np.ones((1, 1))
+    kalman_x.errorCovPost = 1. * np.ones((3, 3))
 
-    kalman_x.transitionMatrix = np.array([[1., 1.], [0., 1.]])
-    kalman_x.measurementMatrix = .5 * np.ones((1, 2))
-    kalman_x.processNoiseCov = 1e-5 * np.eye(2)
-    kalman_x.measurementNoiseCov = 1e-1 * np.ones((1, 1))
-    kalman_x.errorCovPost = 1. * np.ones((2, 2))
+    kalman_y = cv2.KalmanFilter()
+    kalman_y.transitionMatrix = np.array([[1., 1., 1.],
+                                          [0., 1., 1.],
+                                          [0., 0., 1.]])
+    kalman_y.measurementMatrix = np.array([[1., 0., 0.]])
+    kalman_y.processNoiseCov = 1e-2 * np.eye(3)
+    kalman_y.measurementNoiseCov = 1e-6 * np.ones((1, 1))
+    kalman_y.errorCovPost = 1. * np.ones((3, 3))
 
-    state_x = 1. * np.ones((2, 1))
-
-    kalman_y = cv2.KalmanFilter(2, 1)
-
-    kalman_y.transitionMatrix = np.array([[1., 1.], [0., 1.]])
-    kalman_y.measurementMatrix = .5 * np.ones((1, 2))
-    kalman_y.processNoiseCov = 1e-5 * np.eye(2)
-    kalman_y.measurementNoiseCov = 1e-1 * np.ones((1, 1))
-    kalman_y.errorCovPost = 1. * np.ones((2, 2))
-
-    state_y = 1. * np.ones((2, 1))
+    state_x = np.array([0, 0, 0])
+    state_y = np.array([0, 0, 0])
 
     # Process video and track objects
     KEY_PRESSED = 1
@@ -124,26 +126,42 @@ def main():
             for i, newbox in enumerate(boxes):
                 p1 = (int(newbox[0]), int(newbox[1]))
                 p2 = (int(newbox[0] + newbox[2]), int(newbox[1] + newbox[3]))
-                state_x[0] = p1[0] + ((p2[0] - p1[0]) / 2)
-                state_y[0] = p1[1] + ((p2[1] - p1[1]) / 2)
+                state_x[0] = int(p1[0] + ((p2[0] - p1[0]) / 2))
+                state_y[0] = int(p1[1] + ((p2[1] - p1[1]) / 2))
 
                 if j == 0:
-                    kalman_y.statePost = p2[1]/2 * np.ones((2, 1))
-                    kalman_x.statePost = p2[0]/2 * np.ones((2, 1))
+                    kalman_x.statePost = state_x.astype(float)
+                    kalman_y.statePost = state_y.astype(float)
                     print(kalman_x.statePost)
                     j = 1
 
-                cv2.circle(frame, (state_x[0], state_y[0]), 1, colors[i], 1, 1)
+                if success:
+                    cv2.circle(frame, (state_x[0], state_y[0]), 1, colors[i], 2, 1)
+                else:
+                    cv2.circle(frame, (state_x[0], state_y[0]), 1, color_lost, 2, 1)
 
                 pred_x = kalman_x.predict()
-                kalman_x.correct(np.dot(kalman_x.measurementMatrix, state_x))
-
                 pred_y = kalman_y.predict()
-                kalman_y.correct(np.dot(kalman_y.measurementMatrix, state_y))
 
-                print(pred_x, ", ", pred_y)
+                diff_x = abs(pred_x[0] - state_x[0])
+                diff_y = abs(pred_y[0] - state_y[0])
 
-                cv2.circle(frame, (pred_x[0], pred_y[0]), 5, colors[i], 2, 1)
+                if diff_x > 10 or \
+                        diff_y > 10 \
+                        or not success:
+                    kalman_x.correct(np.dot(kalman_x.measurementMatrix, pred_x))
+                    kalman_y.correct(np.dot(kalman_y.measurementMatrix, pred_y))
+                    newbox[0] = newbox[0] + diff_x
+                    newbox[1] = newbox[1] + diff_y
+                    newbox[2] = newbox[2] + diff_x
+                    newbox[3] = newbox[3] + diff_y
+                else:
+                    kalman_x.correct(np.dot(kalman_x.measurementMatrix, state_x))
+                    kalman_y.correct(np.dot(kalman_y.measurementMatrix, state_y))
+
+                print(pred_x, ",\n ", pred_y)
+
+                cv2.circle(frame, (int(pred_x[0]), int(pred_y[0])), 5, colors[i], 2, 1)
                 cv2.rectangle(frame, p1, p2, colors[i], 2, 1)
 
             # show frame
