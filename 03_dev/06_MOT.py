@@ -38,14 +38,14 @@ def createTrackerByName(trackerType):
 def main():
     #createTrackerByName(trackerTypes[0])
 
-    videoPath = "D:\joci\projects\Szakdoga_PE\Szakdoga\Dataset\Video\intersection_traffic.mp4".replace("\\", "/")
+    videoPath = "D:\joci\projects\Szakdoga_PE\Szakdoga\Dataset\Video\\traffic.mp4".replace("\\", "/")
 
     # Create a video capture object to read videos
     cap = cv2.VideoCapture(videoPath)
 
 
     # Read first frame
-    for i in range(150):
+    for i in range(10):
         success, frame = cap.read()
         # quit if unable to read the video file
         if not success:
@@ -107,8 +107,9 @@ def main():
     # Process video and track objects
     KEY_PRESSED = 1
     j = 0
+    n = 0
     while cap.isOpened():
-        if KEY_PRESSED == 0 and False:
+        if KEY_PRESSED == 0:
             k = cv2.waitKey() & 0xff
             KEY_PRESSED = 1
             print(f"key pressed: {k}")
@@ -141,9 +142,9 @@ def main():
                     state_y[1:2] = kalman_y.statePre[1:2]
 
                 if success:
-                    cv2.circle(frame, (state_x[0], state_y[0]), 1, colors[i], 2, 1)
+                    cv2.circle(frame, (state_x[0], state_y[0]), 2, colors[i], 3, 1)
                 else:
-                    cv2.circle(frame, (state_x[0], state_y[0]), 1, color_lost, 2, 1)
+                    cv2.circle(frame, (state_x[0], state_y[0]), 2, color_lost, 3, 1)
 
                 pred_x = kalman_x.predict()
                 pred_y = kalman_y.predict()
@@ -166,12 +167,16 @@ def main():
 
                 print(pred_x, ",\n ", pred_y)
 
-                cv2.circle(frame, (int(pred_x[0]), int(pred_y[0])), 5, colors[i], 2, 1)
+                cv2.circle(frame, (int(pred_x[0]), int(pred_y[0])), 8, [0, 255, 0], 3, 1)
                 cv2.rectangle(frame, p1, p2, colors[i], 2, 1)
 
             # show frame
             cv2.imshow('MultiTracker', frame)
 
+            # destPath = f"D:/joci/projects/Szakdoga_PE/Szakdoga/Dataset/02_ObjectTracking/result/{trackerType}/images/%04d" % n + ".png"
+            # cv2.imwrite(destPath, frame)
+
+            n = n + 1
             # quit on ESC button
             if k == 27:  # Esc pressed
                 break
