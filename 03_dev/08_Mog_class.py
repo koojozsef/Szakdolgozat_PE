@@ -23,8 +23,8 @@ class MixtureOfGaussian:
     __MUE__ = 0
     __SIGMA__ = 1
     __OMEGA__ = 2
-    __DIST_N__ = 10
-    __DIST_BG__ = 6
+    __DIST_N__ = 20
+    __DIST_BG__ = 4
 
     @staticmethod
     def captureImage(folderName, imageStringWithoutNumber, fileFormat, i):
@@ -241,12 +241,12 @@ def main():
     fg_name = ["butterfly", "tigger1", "tigger2", "tigger3", "walk1",
                "walk2", "walk3", "walk4", "raptor", "girl", "dance"]
 
-    folder_name = str(bg_name[3] + "_" + fg_name[5])
+    folder_name = str(bg_name[1] + "_" + fg_name[0])
 
     orig_folder = "D:\\joci\\projects\\Szakdoga_PE\\Szakdoga\\Dataset\\Generated\\database\\" + folder_name + "\\orig\\"
     mask_folder = "D:\\joci\\projects\\Szakdoga_PE\\Szakdoga\\Dataset\\Generated\\database\\" + folder_name + "\\gt\\"
 
-    mog = MixtureOfGaussian(alpha=0.2, ro=0.5, ro_fg=0.8)
+    mog = MixtureOfGaussian(alpha=0.5, ro=0.75, ro_fg=0.5)
 
     for i in range(1000):
         # Get images
