@@ -5,8 +5,8 @@ from random import randint
 import numpy as np
 
 
-trackerTypes = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN', 'MOSSE', 'CSRT']
-trackerType = trackerTypes[4]
+trackerTypes = ['KCF', 'TLD', 'MEDIANFLOW', 'MOSSE']
+trackerType = trackerTypes[1]
 
 def createTrackerByName(trackerType):
     # Create a tracker based on tracker name
@@ -45,7 +45,7 @@ def main():
 
 
     # Read first frame
-    for i in range(10):
+    for i in range(160):
         success, frame = cap.read()
         # quit if unable to read the video file
         if not success:
@@ -142,9 +142,11 @@ def main():
                     state_y[1:2] = kalman_y.statePre[1:2]
 
                 if success:
-                    cv2.circle(frame, (state_x[0], state_y[0]), 2, colors[i], 3, 1)
+                    #cv2.circle(frame, (state_x[0], state_y[0]), 2, colors[i], 3, 1)
+                    pass
                 else:
-                    cv2.circle(frame, (state_x[0], state_y[0]), 2, color_lost, 3, 1)
+                    #cv2.circle(frame, (state_x[0], state_y[0]), 2, color_lost, 3, 1)
+                    pass
 
                 pred_x = kalman_x.predict()
                 pred_y = kalman_y.predict()
@@ -167,7 +169,7 @@ def main():
 
                 print(pred_x, ",\n ", pred_y)
 
-                cv2.circle(frame, (int(pred_x[0]), int(pred_y[0])), 8, [0, 255, 0], 3, 1)
+                #cv2.circle(frame, (int(pred_x[0]), int(pred_y[0])), 8, [0, 255, 0], 3, 1)
                 cv2.rectangle(frame, p1, p2, colors[i], 2, 1)
 
             # show frame

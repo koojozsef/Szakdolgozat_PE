@@ -57,8 +57,8 @@ def main():
     sequence_count = 20
     image_count = 5
     input_count = 4  # 4 input image; 0: Grey, 1: GT, 2: MOG, 3: Optical flow
-    height = 80
-    width = 120
+    height = 60
+    width = 90
 
     training_data = np.zeros((sequence_count, image_count, input_count, height, width)).astype(np.uint8)
     training_data[:, :, :2, :, :] = get_data(sequence_count, image_count, height, width)
@@ -114,8 +114,8 @@ def main():
     x_test_label = network_label[70:].astype('float32') / 255.
 
     autoencoder.fit(x_train, x_label,
-                    epochs=15,
-                    batch_size=2,
+                    epochs=10,
+                    batch_size=20,
                     shuffle=True,
                     validation_data=(x_test, x_test_label))
 
